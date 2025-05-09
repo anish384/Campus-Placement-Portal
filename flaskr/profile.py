@@ -14,7 +14,7 @@ bp = Blueprint('profile', __name__, url_prefix='/profile')
 # Configure upload folder
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'uploads')
 RESUME_FOLDER = os.path.join(UPLOAD_FOLDER, 'resumes')
-ALLOWED_EXTENSIONS = {'pdf'}
+ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'jpg', 'jpeg'}
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB
 
 # Create upload directories if they don't exist
@@ -125,8 +125,26 @@ def view_resume(student_id):
         flash('Resume file not found', 'error')
         return redirect(url_for('index'))
     
+    # Determine file type based on extension
+    file_extension = student['resume_url'].rsplit('.', 1)[1].lower() if '.' in student['resume_url'] else ''
+    
+    # Set appropriate MIME type based on file extension
+    if file_extension in ['pdf']:
+        mimetype = 'application/pdf'
+    elif file_extension in ['doc', 'docx']:
+        mimetype = 'application/msword'
+        if file_extension == 'docx':
+            mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    elif file_extension in ['jpg', 'jpeg']:
+        mimetype = 'image/jpeg'
+    else:
+        mimetype = 'application/octet-stream'  # Default binary file type
+    
+    # Store the file extension in the session for the frontend to use
+    session['resume_file_type'] = file_extension
+    
     # Return the file for inline viewing (not as attachment)
-    return send_file(resume_path, mimetype='application/pdf')
+    return send_file(resume_path, mimetype=mimetype)
 
 @bp.route('/student', methods=('GET', 'POST'))
 @student_required
@@ -194,9 +212,9 @@ def student_profile():
             error = 'CGPA is required.'
         # Resume validation - required if not already uploaded
         elif not student.get('resume_url') and (not resume_file or resume_file.filename == ''):
-            error = 'Resume is required. Please upload your resume in PDF format.'
+            error = 'Resume is required. Please upload your resume in PDF, Word (doc/docx), or JPEG format.'
         elif resume_file and resume_file.filename != '' and not allowed_file(resume_file.filename):
-            error = 'Only PDF files are allowed for resume upload.'
+            error = 'Only PDF, Word (doc/docx), and JPEG files are allowed for resume upload.'
             
         if error is None:
             try:
@@ -313,14 +331,7 @@ def recruiter_profile():
         industry = request.form.get('industry', '').strip()
         designation = request.form.get('designation', '').strip()
         
-        # Get eligibility criteria
-        default_min_cgpa = request.form.get('default_min_cgpa', '')
-        default_eligible_branches = request.form.getlist('default_eligible_branches')
-        default_skills = request.form.get('default_skills', '').strip()
-        
-        # Get job details
-        default_job_role = request.form.get('default_job_role', '').strip()
-        default_job_type = request.form.get('default_job_type', '').strip()
+        # Eligibility criteria and job details removed
         
         error = None
         
@@ -352,14 +363,7 @@ def recruiter_profile():
                 error = 'This phone number is already registered by another recruiter.'
             else:
                 try:
-                    # Convert CGPA to float if provided
-                    if default_min_cgpa:
-                        try:
-                            default_min_cgpa = float(default_min_cgpa)
-                        except ValueError:
-                            default_min_cgpa = None
-                    else:
-                        default_min_cgpa = None
+                    # CGPA conversion removed
                         
                     # Create update data dictionary
                     update_data = {
@@ -370,11 +374,6 @@ def recruiter_profile():
                         'linkedin_url': linkedin_url,
                         'industry': industry,
                         'designation': designation,
-                        'default_min_cgpa': default_min_cgpa,
-                        'default_eligible_branches': default_eligible_branches,
-                        'default_skills': default_skills,
-                        'default_job_role': default_job_role,
-                        'default_job_type': default_job_type,
                         'profile_complete': True,
                         'updated_at': datetime.datetime.now()
                     }

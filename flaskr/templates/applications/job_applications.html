@@ -174,8 +174,8 @@
             <i class="fas fa-check-circle me-1"></i> Selected
           </button>
         </div>
-        <button class="btn btn-sm btn-primary" onclick="exportToCSV()">
-          <i class="fas fa-download me-1"></i> Export
+        <button class="btn btn-sm btn-success" onclick="exportToCSV()" title="Export visible applications to CSV">
+          <i class="fas fa-file-export me-1"></i> Export to CSV
         </button>
       </div>
     </div>
@@ -308,11 +308,32 @@
                             </div>
                             
                             {% if app.student_id %}
-                            <div>
-                              <a href="{{ url_for('profile.download_resume', student_id=app.student_id) }}" class="btn btn-primary" target="_blank">
-                                <i class="fas fa-file-pdf me-1"></i> View Resume
+                            <div class="d-flex flex-wrap gap-2">
+                              {% if app.resume_file_type %}
+                                {% if app.resume_file_type == 'pdf' %}
+                                <a href="{{ url_for('applications.view_pdf', application_id=app._id) }}" class="btn btn-primary" target="_blank">
+                                  <i class="fas fa-file-pdf me-1"></i> View PDF
+                                </a>
+                                {% elif app.resume_file_type in ['jpg', 'jpeg'] %}
+                                <a href="{{ url_for('applications.view_pdf', application_id=app._id) }}" class="btn btn-primary" target="_blank">
+                                  <i class="fas fa-image me-1"></i> View Image
+                                </a>
+                                {% elif app.resume_file_type in ['doc', 'docx'] %}
+                                <span class="btn btn-secondary disabled">
+                                  <i class="fas fa-file-word me-1"></i> Word Document
+                                </span>
+                                {% else %}
+                                <a href="{{ url_for('applications.view_pdf', application_id=app._id) }}" class="btn btn-primary" target="_blank">
+                                  <i class="fas fa-file me-1"></i> View Resume
+                                </a>
+                                {% endif %}
+                              {% endif %}
+                              
+                              <a href="{{ url_for('profile.download_resume', student_id=app.student_id) }}" class="btn btn-outline-primary" title="Download Resume">
+                                <i class="fas fa-download me-1"></i> Download
                               </a>
-                              <a href="{{ url_for('profile.student_view', student_id=app.student_id) }}" class="btn btn-outline-primary ms-2">
+                              
+                              <a href="{{ url_for('profile.student_view', student_id=app.student_id) }}" class="btn btn-outline-primary">
                                 <i class="fas fa-user me-1"></i> Full Profile
                               </a>
                             </div>
@@ -555,19 +576,37 @@
     form.submit();
   }
   
+  // Initialize the page when loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set the 'All' filter as active by default
+    filterApplications('all');
+    
+    // Add active class to the 'All' button
+    const allButton = document.querySelector('.btn-group .btn:first-child');
+    if (allButton) {
+      allButton.classList.add('active');
+    }
+  });
+  
   // Filter applications by status
   function filterApplications(status) {
     const rows = document.querySelectorAll('.application-row');
+    let visibleCount = 0;
     
     rows.forEach(row => {
       if (status === 'all') {
         row.style.display = '';
+        row.classList.add('visible-row');
+        visibleCount++;
       } else {
         const rowStatus = row.getAttribute('data-status');
         if (rowStatus === status) {
           row.style.display = '';
+          row.classList.add('visible-row');
+          visibleCount++;
         } else {
           row.style.display = 'none';
+          row.classList.remove('visible-row');
         }
       }
     });
@@ -582,15 +621,14 @@
     });
     
     // Update table header to show filtered count
-    const visibleRows = document.querySelectorAll('.application-row[style=""]');
     const statusText = status === 'all' ? 'All Applications' : status + ' Applications';
-    document.querySelector('.applicants-header').textContent = `${statusText} (${visibleRows.length})`;
+    document.querySelector('.applicants-header').innerHTML = `<i class="fas fa-users me-2"></i>${statusText} (${visibleCount})`;
   }
   
   function exportToCSV() {
     const table = document.getElementById("applicationsTable");
     let csv = [];
-    let rows = table.querySelectorAll("tr:not([style='display: none'])"); // Only export visible rows
+    let rows = table.querySelectorAll("tr");
     
     // Add headers
     let headers = [];
@@ -604,6 +642,11 @@
     
     // Add data rows
     for (let i = 1; i < rows.length; i++) { // Skip header row
+      // Skip hidden rows
+      if (rows[i].style.display === 'none') {
+        continue;
+      }
+      
       let row = [], cols = rows[i].querySelectorAll("td");
       
       // Get applicant name and email
@@ -633,27 +676,49 @@
       csv.push(row.join(","));
     }
     
-    // Download CSV file
-    const filterStatus = document.querySelector('.btn-group .btn.active')?.textContent.trim().includes('All') ? 'all' : 
-                         document.querySelector('.btn-group .btn.active')?.textContent.trim().replace(/[^a-zA-Z]/g, '');
-    const filename = filterStatus === 'all' ? 
-                    `applications_${job.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv` : 
-                    `${filterStatus}_applications_${job.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+    // Get current filter status for filename
+    const filterStatus = document.querySelector('.btn-group .btn.active') ? 
+                        (document.querySelector('.btn-group .btn.active').textContent.trim().includes('All') ? 'all' : 
+                        document.querySelector('.btn-group .btn.active').textContent.trim().replace(/[^a-zA-Z]/g, '')) : 'all';
     
+    // Get job title from the page for the filename
+    const jobTitle = document.querySelector('h3.text-primary').textContent.trim();
+    
+    // Create filename based on filter status
+    const filename = filterStatus === 'all' ? 
+                    `applications_${jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}.csv` : 
+                    `${filterStatus}_applications_${jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+    
+    // Download the CSV file
     downloadCSV(csv.join("\n"), filename);
   }
 
   function downloadCSV(csv, filename) {
-    let csvFile = new Blob([csv], {type: "text/csv"});
-    let downloadLink = document.createElement("a");
+    // Add BOM to ensure Excel opens the CSV file correctly with UTF-8 encoding
+    const BOM = '\uFEFF';
+    let csvContent = BOM + csv;
     
+    // Create a Blob with the CSV content
+    let csvFile = new Blob([csvContent], {type: "text/csv;charset=utf-8"});
+    
+    // Create a download link
+    let downloadLink = document.createElement("a");
     downloadLink.download = filename;
     downloadLink.href = window.URL.createObjectURL(csvFile);
     downloadLink.style.display = "none";
     
+    // Trigger the download
     document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+    
+    // Use setTimeout to ensure the click happens after the link is fully appended
+    setTimeout(() => {
+      downloadLink.click();
+      // Clean up
+      setTimeout(() => {
+        window.URL.revokeObjectURL(downloadLink.href);
+        document.body.removeChild(downloadLink);
+      }, 100);
+    }, 0);
   }
 </script>
 {% endblock %}

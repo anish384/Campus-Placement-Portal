@@ -262,24 +262,47 @@ def student_login():
 @bp.route('/recruiter/login', methods=('GET', 'POST'))
 def recruiter_login():
     """Handle recruiter login."""
+    if 'login_attempts' not in session:
+        session['login_attempts'] = []
+        
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
         db = get_db()
         error = None
         
+        # Email format validation
+        email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
         if not email:
             error = 'Email is required.'
+        elif not re.match(email_regex, email):
+            error = 'Please enter a valid email address.'
         elif not password:
             error = 'Password is required.'
         
+        # Rate limiting logic
+        now = time.time()
+        attempts = [t for t in session['login_attempts'] if now - t < LOGIN_ATTEMPT_WINDOW]
+        if len(attempts) >= LOGIN_ATTEMPT_LIMIT:
+            error = f'Too many login attempts. Please try again in {int(LOGIN_ATTEMPT_WINDOW - (now - attempts[0]))} seconds.'
+        else:
+            session['login_attempts'] = attempts
+        
         if error is None:
-            user = db['recruiters'].find_one({'email': email})
+            # Use projection to only fetch required fields
+            user = db['recruiters'].find_one(
+                {'email': email},
+                {'_id': 1, 'password': 1}
+            )
             
             if user is None:
-                error = 'Incorrect email.'
+                error = 'No recruiter account found with this email.'
+                # Add the attempt timestamp for rate limiting
+                session['login_attempts'] = session.get('login_attempts', []) + [time.time()]
             elif not check_password_hash(user['password'], password):
                 error = 'Incorrect password.'
+                # Add the attempt timestamp for rate limiting
+                session['login_attempts'] = session.get('login_attempts', []) + [time.time()]
         
         if error is None:
             session.clear()

@@ -118,9 +118,8 @@ def index():
 @recruiter_required
 def create():
     """Create a new job listing."""
-    # Debug information
+    # Check profile completion status
     profile_complete = g.user.get('profile_complete', False)
-    flash(f'Profile complete status: {profile_complete}', 'info')
     
     # Always allow job creation (removing the profile check temporarily)
     # if not profile_complete:
@@ -183,16 +182,14 @@ def create():
                     'company_logo': g.user.get('company_logo', '')
                 })
                 
-                if result.inserted_id:
-                    flash(f'Job listing created successfully with ID: {result.inserted_id}', 'success')
-                else:
+                if not result.inserted_id:
                     flash('Failed to create job listing. Please try again.', 'error')
             except Exception as e:
                 error = f'An error occurred: {str(e)}'
                 flash(error, 'error')
                 return render_template('jobs/create.html', branches=branches, job_types=job_types)
             
-            flash('Job listing created successfully!', 'success')
+            # Success message removed
             return redirect(url_for('jobs.index'))
         
         flash(error, 'error')

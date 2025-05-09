@@ -25,6 +25,19 @@ def job_applications(job_id):
     db = get_db()
     applications = list(db['applications'].find({'job_id': ObjectId(job_id)}).sort('created_at', -1))
     
+    # Add file type information for each application's resume
+    for app in applications:
+        if app.get('student_id'):
+            student = db['students'].find_one({'_id': app['student_id']})
+            if student and student.get('resume_url'):
+                # Determine file type based on extension
+                file_extension = student['resume_url'].rsplit('.', 1)[1].lower() if '.' in student['resume_url'] else ''
+                app['resume_file_type'] = file_extension
+            else:
+                app['resume_file_type'] = None
+        else:
+            app['resume_file_type'] = None
+    
     return render_template('applications/job_applications.html', job=job, applications=applications)
 
 @bp.route('/view/<application_id>')
@@ -47,12 +60,21 @@ def view_application(application_id):
     if g.user['_id'] != job['recruiter_id']:
         abort(403)
     
-    return render_template('applications/application_view.html', application=application, job=job)
+    # Get the student to determine resume file type
+    file_type = None
+    if application.get('student_id'):
+        student = db['students'].find_one({'_id': application['student_id']})
+        if student and student.get('resume_url'):
+            # Determine file type based on extension
+            file_extension = student['resume_url'].rsplit('.', 1)[1].lower() if '.' in student['resume_url'] else ''
+            file_type = file_extension
+    
+    return render_template('applications/application_view.html', application=application, job=job, file_type=file_type)
 
 @bp.route('/view-pdf/<application_id>')
 @recruiter_required
 def view_pdf(application_id):
-    """View dedicated PDF viewer for an application's resume."""
+    """View dedicated viewer for an application's resume (supports multiple file formats)."""
     db = get_db()
     
     # Get the application
@@ -69,10 +91,20 @@ def view_pdf(application_id):
     if g.user['_id'] != job['recruiter_id']:
         abort(403)
     
+    # Get the student to determine resume file type
+    student = db['students'].find_one({'_id': application['student_id']})
+    if student is None or not student.get('resume_url'):
+        flash('Resume not found', 'error')
+        return redirect(url_for('applications.view_application', application_id=application_id))
+    
+    # Determine file type based on extension
+    file_extension = student['resume_url'].rsplit('.', 1)[1].lower() if '.' in student['resume_url'] else ''
+    
     return render_template('applications/pdf_viewer.html', 
                            application_id=application_id,
                            student_id=application['student_id'],
-                           student_name=application['student_name'])
+                           student_name=application['student_name'],
+                           file_type=file_extension)
 
 @bp.route('/<application_id>/update-status', methods=('POST',))
 @recruiter_required

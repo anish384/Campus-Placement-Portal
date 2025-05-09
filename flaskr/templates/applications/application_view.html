@@ -80,7 +80,7 @@
     font-weight: 500;
   }
   
-  .pdf-viewer {
+  .resume-viewer {
     width: 100%;
     height: 850px;
     border: 1px solid #dee2e6;
@@ -88,7 +88,7 @@
     transition: all 0.3s ease;
   }
   
-  .pdf-viewer.fullscreen {
+  .resume-viewer.fullscreen {
     position: fixed;
     top: 0;
     left: 0;
@@ -99,7 +99,7 @@
     border: none;
   }
   
-  .pdf-controls {
+  .resume-controls {
     position: absolute;
     top: 15px;
     right: 15px;
@@ -108,7 +108,7 @@
     gap: 10px;
   }
   
-  .pdf-control-btn {
+  .resume-control-btn {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -236,51 +236,71 @@
 {% block content %}
 <div class="container mt-4 mb-5">
   <!-- Application Header -->
-  <div class="application-header d-flex justify-content-between align-items-start">
-    <div class="d-flex">
-      <div class="avatar-circle bg-primary text-white me-3">
-        {{ application.student_name[:1] }}
-      </div>
-      <div>
-        <h3 class="mb-1">{{ application.student_name }}</h3>
-        <p class="text-muted mb-2">
-          <i class="fas fa-envelope me-1"></i> {{ application.student_email }} 
-          <span class="mx-2">|</span> 
-          <i class="fas fa-phone me-1"></i> {{ application.student_phone }}
-        </p>
-        <div>
-          <span class="badge bg-primary rounded-pill me-2">CGPA: {{ application.student_cgpa }}</span>
-          <span class="badge bg-secondary rounded-pill">{{ application.student_branch }}</span>
+  <div class="application-header shadow-sm">
+    <div class="row align-items-center">
+      <!-- Student Basic Info -->
+      <div class="col-md-8 mb-3 mb-md-0">
+        <div class="d-flex align-items-center">
+          <div class="avatar-circle bg-primary text-white me-3">
+            {{ application.student_name[:1] }}
+          </div>
+          <div>
+            <h3 class="mb-1 fw-bold">{{ application.student_name }}</h3>
+            <div class="d-flex flex-wrap align-items-center mb-2">
+              <div class="me-3">
+                <i class="fas fa-envelope me-1 text-muted"></i>
+                <span>{{ application.student_email }}</span>
+              </div>
+              <div>
+                <i class="fas fa-phone me-1 text-muted"></i>
+                <span>{{ application.student_phone }}</span>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center">
+              <div class="me-3">
+                <span class="badge bg-primary rounded-pill">CGPA: {{ application.student_cgpa }}</span>
+              </div>
+              <div>
+                <span class="badge bg-secondary rounded-pill">{{ application.student_branch }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="text-end">
-      <div class="mb-2">
-        <span class="badge status-badge 
-          {% if application.status == 'Applied' %}bg-secondary
-          {% elif application.status == 'Shortlisted' %}bg-info text-dark
-          {% elif application.status == 'Interview Scheduled' %}bg-primary
-          {% elif application.status == 'Selected' %}bg-success
-          {% elif application.status == 'Rejected' %}bg-danger
-          {% else %}bg-secondary{% endif %}">
-          <i class="fas 
-            {% if application.status == 'Applied' %}fa-hourglass-start
-            {% elif application.status == 'Shortlisted' %}fa-user-check
-            {% elif application.status == 'Interview Scheduled' %}fa-calendar-check
-            {% elif application.status == 'Selected' %}fa-check-circle
-            {% elif application.status == 'Rejected' %}fa-times-circle
-            {% else %}fa-hourglass-start{% endif %} me-1"></i>
-          {{ application.status }}
-        </span>
+      
+      <!-- Application Status -->
+      <div class="col-md-4">
+        <div class="text-md-end">
+          <div class="mb-2">
+            <span class="badge status-badge fs-6 px-3 py-2 
+              {% if application.status == 'Applied' %}bg-secondary
+              {% elif application.status == 'Shortlisted' %}bg-info text-dark
+              {% elif application.status == 'Interview Scheduled' %}bg-primary
+              {% elif application.status == 'Selected' %}bg-success
+              {% elif application.status == 'Rejected' %}bg-danger
+              {% else %}bg-secondary{% endif %}">
+              <i class="fas 
+                {% if application.status == 'Applied' %}fa-hourglass-start
+                {% elif application.status == 'Shortlisted' %}fa-user-check
+                {% elif application.status == 'Interview Scheduled' %}fa-calendar-check
+                {% elif application.status == 'Selected' %}fa-check-circle
+                {% elif application.status == 'Rejected' %}fa-times-circle
+                {% else %}fa-hourglass-start{% endif %} me-1"></i>
+              {{ application.status }}
+            </span>
+          </div>
+          <div class="application-dates p-2 bg-light rounded">
+            <p class="text-muted small mb-1">
+              <i class="fas fa-calendar-alt me-1"></i> <strong>Applied on:</strong> {{ application.created_at.strftime('%d %b, %Y %H:%M') }}
+            </p>
+            {% if application.get('status_updated_at') %}
+            <p class="text-muted small mb-0">
+              <i class="fas fa-history me-1"></i> <strong>Last updated:</strong> {{ application.status_updated_at.strftime('%d %b, %Y %H:%M') }}
+            </p>
+            {% endif %}
+          </div>
+        </div>
       </div>
-      <p class="text-muted small mb-0">
-        <i class="fas fa-calendar-alt me-1"></i> Applied on {{ application.created_at.strftime('%d %b, %Y %H:%M') }}
-      </p>
-      {% if application.get('status_updated_at') %}
-      <p class="text-muted small mb-0">
-        <i class="fas fa-history me-1"></i> Last updated: {{ application.status_updated_at.strftime('%d %b, %Y %H:%M') }}
-      </p>
-      {% endif %}
     </div>
   </div>
   
@@ -290,22 +310,68 @@
       <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Job Information</h5>
     </div>
     <div class="card-body">
-      <h4>{{ job.title }}</h4>
-      <p class="text-muted">{{ job.company_name }} - {{ job.location }}</p>
-      <div class="d-flex flex-wrap gap-3 mb-3">
-        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
-          <i class="fas fa-briefcase me-1"></i> {{ job.job_type }}
-        </span>
-        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
-          <i class="fas fa-graduation-cap me-1"></i> Min CGPA: {{ job.min_cgpa }}
-        </span>
-        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
-          <i class="fas fa-calendar-alt me-1"></i> Deadline: {{ job.application_deadline.strftime('%d %b, %Y') }}
-        </span>
+      <div class="row">
+        <div class="col-lg-8">
+          <!-- Job Title and Company -->
+          <div class="mb-3">
+            <h4 class="fw-bold mb-1">{{ job.title }}</h4>
+            <div class="d-flex align-items-center">
+              <i class="fas fa-building me-2 text-muted"></i>
+              <span class="fw-medium">{{ job.company_name }}</span>
+              <span class="mx-2 text-muted">|</span>
+              <i class="fas fa-map-marker-alt me-1 text-muted"></i>
+              <span>{{ job.location }}</span>
+            </div>
+          </div>
+          
+          <!-- Job Details -->
+          <div class="row mb-3">
+            <div class="col-md-4 mb-2">
+              <div class="job-detail-item p-2 bg-light rounded">
+                <div class="text-muted small">Job Type</div>
+                <div class="fw-medium">
+                  <i class="fas fa-briefcase me-1 text-primary"></i>
+                  {{ job.job_type }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-2">
+              <div class="job-detail-item p-2 bg-light rounded">
+                <div class="text-muted small">Minimum CGPA</div>
+                <div class="fw-medium">
+                  <i class="fas fa-graduation-cap me-1 text-primary"></i>
+                  {{ job.min_cgpa }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-2">
+              <div class="job-detail-item p-2 bg-light rounded">
+                <div class="text-muted small">Application Deadline</div>
+                <div class="fw-medium">
+                  <i class="fas fa-calendar-alt me-1 text-primary"></i>
+                  {{ job.application_deadline.strftime('%d %b, %Y') }}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {% if job.description %}
+          <!-- Job Description (truncated) -->
+          <div class="job-description mb-3">
+            <h6 class="fw-bold">Job Description</h6>
+            <p class="text-muted mb-0">{{ job.description|truncate(150) }}</p>
+          </div>
+          {% endif %}
+        </div>
+        
+        <div class="col-lg-4 d-flex align-items-center">
+          <div class="w-100 text-center text-lg-end mt-3 mt-lg-0">
+            <a href="{{ url_for('jobs.detail', id=job._id) }}" class="btn btn-primary">
+              <i class="fas fa-external-link-alt me-1"></i> View Full Job Details
+            </a>
+          </div>
+        </div>
       </div>
-      <a href="{{ url_for('jobs.detail', id=job._id) }}" class="btn btn-outline-primary">
-        <i class="fas fa-external-link-alt me-1"></i> View Full Job Details
-      </a>
     </div>
   </div>
   
@@ -313,29 +379,29 @@
     <!-- Left Column: Student Information -->
     <div class="col-md-4">
       <div class="card info-card mb-4">
-        <div class="card-header">
+        <div class="card-header bg-gradient-primary text-white">
           <h5 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Student Information</h5>
         </div>
         <div class="card-body">
           <div class="info-item">
-            <div class="info-label">Full Name</div>
-            <div class="info-value">{{ application.student_name }}</div>
+            <div class="info-label"><i class="fas fa-user me-2 text-primary"></i>Full Name</div>
+            <div class="info-value fw-medium">{{ application.student_name }}</div>
           </div>
           <div class="info-item">
-            <div class="info-label">Email Address</div>
+            <div class="info-label"><i class="fas fa-envelope me-2 text-primary"></i>Email Address</div>
             <div class="info-value">{{ application.student_email }}</div>
           </div>
           <div class="info-item">
-            <div class="info-label">Phone Number</div>
+            <div class="info-label"><i class="fas fa-phone me-2 text-primary"></i>Phone Number</div>
             <div class="info-value">{{ application.student_phone }}</div>
           </div>
           <div class="info-item">
-            <div class="info-label">Branch</div>
+            <div class="info-label"><i class="fas fa-code-branch me-2 text-primary"></i>Branch</div>
             <div class="info-value">{{ application.student_branch }}</div>
           </div>
           <div class="info-item">
-            <div class="info-label">CGPA</div>
-            <div class="info-value">{{ application.student_cgpa }}</div>
+            <div class="info-label"><i class="fas fa-graduation-cap me-2 text-primary"></i>CGPA</div>
+            <div class="info-value fw-bold">{{ application.student_cgpa }}</div>
           </div>
           <div class="mt-3">
             <a href="{{ url_for('profile.student_view', student_id=application.student_id) }}" class="btn btn-outline-primary w-100">
@@ -382,33 +448,93 @@
     <div class="col-md-8">
       <div class="card info-card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0"><i class="fas fa-file-pdf me-2"></i>Resume</h5>
+          <h5 class="mb-0">
+            {% if file_type == 'pdf' %}
+              <i class="fas fa-file-pdf me-2"></i>PDF Resume
+            {% elif file_type in ['jpg', 'jpeg'] %}
+              <i class="fas fa-file-image me-2"></i>Image Resume
+            {% elif file_type in ['doc', 'docx'] %}
+              <i class="fas fa-file-word me-2"></i>Word Document
+            {% else %}
+              <i class="fas fa-file-alt me-2"></i>Resume
+            {% endif %}
+          </h5>
           <div class="d-flex gap-2">
-            <a href="{{ url_for('applications.view_pdf', application_id=application._id) }}" class="btn btn-sm btn-primary">
-              <i class="fas fa-eye me-1"></i> View PDF
+            {% if file_type == 'pdf' %}
+            <a href="{{ url_for('applications.view_pdf', application_id=application._id) }}" class="btn btn-sm btn-primary" target="_blank">
+              <i class="fas fa-file-pdf me-1"></i> View PDF
             </a>
             <button type="button" id="togglePdfView" class="btn btn-sm btn-outline-secondary">
               <i class="fas fa-expand me-1"></i> Toggle View
             </button>
+            {% elif file_type in ['jpg', 'jpeg'] %}
+            <a href="{{ url_for('applications.view_pdf', application_id=application._id) }}" class="btn btn-sm btn-primary" target="_blank">
+              <i class="fas fa-image me-1"></i> View Image
+            </a>
+            <button type="button" id="togglePdfView" class="btn btn-sm btn-outline-secondary">
+              <i class="fas fa-expand me-1"></i> Toggle View
+            </button>
+            {% elif file_type in ['doc', 'docx'] %}
+            <div class="alert alert-info py-1 px-3 mb-0">
+              <i class="fas fa-info-circle me-1"></i> Word documents cannot be viewed directly in browser
+            </div>
+            {% endif %}
+            
             <a href="{{ url_for('profile.download_resume', student_id=application.student_id) }}" class="btn btn-sm btn-outline-primary">
               <i class="fas fa-download me-1"></i> Download
             </a>
           </div>
         </div>
         <div class="card-body p-3 position-relative">
-          <div id="pdfContainer" class="position-relative">
-            <div class="pdf-controls">
-              <button type="button" id="zoomIn" class="pdf-control-btn" title="Zoom In">
+          <div id="resumeContainer" class="position-relative">
+            <div class="resume-controls">
+              <button type="button" id="zoomIn" class="resume-control-btn" title="Zoom In">
                 <i class="fas fa-search-plus"></i>
               </button>
-              <button type="button" id="zoomOut" class="pdf-control-btn" title="Zoom Out">
+              <button type="button" id="zoomOut" class="resume-control-btn" title="Zoom Out">
                 <i class="fas fa-search-minus"></i>
               </button>
-              <button type="button" id="fullscreenToggle" class="pdf-control-btn" title="Toggle Fullscreen">
+              <button type="button" id="fullscreenToggle" class="resume-control-btn" title="Toggle Fullscreen">
                 <i class="fas fa-expand"></i>
               </button>
             </div>
-            <iframe id="pdfViewer" src="{{ url_for('profile.view_resume', student_id=application.student_id) }}" class="pdf-viewer" title="Resume PDF"></iframe>
+            <div id="fileTypeMessage" class="alert alert-info text-center mb-0 d-none">
+              <p class="mb-2"><i class="fas fa-info-circle me-2"></i><span id="fileTypeText"></span></p>
+              <a href="{{ url_for('profile.download_resume', student_id=application.student_id) }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-download me-1"></i> Download File
+              </a>
+              <a href="{{ url_for('profile.view_resume', student_id=application.student_id) }}" class="btn btn-sm btn-secondary" target="_blank">
+                <i class="fas fa-external-link-alt me-1"></i> Open in New Tab
+              </a>
+            </div>
+            
+            <!-- PDF Viewer -->
+            <iframe id="pdfViewer" src="{{ url_for('profile.view_resume', student_id=application.student_id) }}" class="resume-viewer" title="PDF Viewer" style="display: none;"></iframe>
+            
+            <!-- Image Viewer -->
+            <div id="imageViewer" class="resume-viewer text-center" style="display: none; overflow: auto; padding: 20px;">
+              <img id="resumeImage" src="{{ url_for('profile.view_resume', student_id=application.student_id) }}" alt="Resume Image" style="max-width: 100%; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block;">
+            </div>
+            
+            <!-- Word Document Message -->
+            <div id="wordViewer" class="resume-viewer text-center" style="display: none; padding: 30px;">
+              <div class="p-4 bg-light rounded">
+                <i class="fas fa-file-word text-primary" style="font-size: 48px;"></i>
+                <h4 class="mt-3">Microsoft Word Document</h4>
+                <p class="text-muted">This resume is in Microsoft Word format and cannot be displayed directly in the browser.</p>
+                <div class="mt-3">
+                  <a href="{{ url_for('profile.download_resume', student_id=application.student_id) }}" class="btn btn-primary">
+                    <i class="fas fa-download me-1"></i> Download Document
+                  </a>
+                  <a href="{{ url_for('profile.view_resume', student_id=application.student_id) }}" class="btn btn-outline-secondary mt-2" target="_blank">
+                    <i class="fas fa-external-link-alt me-1"></i> Open in New Tab
+                  </a>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Default Viewer (fallback) -->
+            <iframe id="defaultViewer" src="{{ url_for('profile.view_resume', student_id=application.student_id) }}" class="resume-viewer" title="Resume Viewer" style="display: none;"></iframe>
           </div>
         </div>
       </div>
@@ -506,48 +632,204 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Pass server-side variables to JavaScript -->
+<script type="text/javascript">
+  // Pre-define variables from server-side to avoid Jinja2 template syntax in JavaScript
+  var RESUME_VIEW_URL = '{{ url_for("profile.view_resume", student_id=application.student_id) }}';
+  {% if application.resume_url %}
+  var SERVER_RESUME_URL = '{{ application.resume_url }}';
+  {% else %}
+  var SERVER_RESUME_URL = '';
+  {% endif %}
+</script>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // PDF Viewer Controls
+    // Resume Viewer Controls
     const pdfViewer = document.getElementById('pdfViewer');
+    const imageViewer = document.getElementById('imageViewer');
+    const wordViewer = document.getElementById('wordViewer');
+    const defaultViewer = document.getElementById('defaultViewer');
+    const resumeImage = document.getElementById('resumeImage');
     const togglePdfViewBtn = document.getElementById('togglePdfView');
     const fullscreenToggleBtn = document.getElementById('fullscreenToggle');
     const zoomInBtn = document.getElementById('zoomIn');
     const zoomOutBtn = document.getElementById('zoomOut');
-    const pdfContainer = document.getElementById('pdfContainer');
+    const resumeContainer = document.getElementById('resumeContainer');
+    const fileTypeMessage = document.getElementById('fileTypeMessage');
+    const fileTypeText = document.getElementById('fileTypeText');
+    const openWithBtn = document.getElementById('openWithBtn');
     
     let isFullscreen = false;
     let currentScale = 1.0;
+    let activeViewer = null;
+    
+    // Function to detect file type from URL or fetch request
+    async function detectFileType() {
+      try {
+        // Try to get file type from server-side session data
+        const resumeUrl = RESUME_VIEW_URL;
+        const response = await fetch(resumeUrl, {
+          method: 'HEAD'
+        });
+        
+        const contentType = response.headers.get('Content-Type');
+        
+        if (contentType && contentType.includes('pdf')) {
+          return 'pdf';
+        } else if (contentType && (contentType.includes('word') || contentType.includes('msword') || contentType.includes('officedocument'))) {
+          return 'word';
+        } else if (contentType && contentType.includes('image')) {
+          return 'image';
+        }
+        
+        // If content type doesn't help, try to check the URL for file extension
+        const urlParts = resumeUrl.split('.');
+        if (urlParts.length > 1) {
+          const extension = urlParts[urlParts.length - 1].toLowerCase();
+          if (extension === 'pdf') {
+            return 'pdf';
+          } else if (['doc', 'docx'].includes(extension)) {
+            return 'word';
+          } else if (['jpg', 'jpeg'].includes(extension)) {
+            return 'image';
+          }
+        }
+        
+        // Fallback: check the file extension from the resume_url if available
+        let fileType = 'unknown';
+        
+        // Check file extension if resume URL exists
+        if (SERVER_RESUME_URL) {
+          if (SERVER_RESUME_URL.endsWith('.pdf')) {
+            fileType = 'pdf';
+          } else if (SERVER_RESUME_URL.endsWith('.doc') || SERVER_RESUME_URL.endsWith('.docx')) {
+            fileType = 'word';
+          } else if (SERVER_RESUME_URL.endsWith('.jpg') || SERVER_RESUME_URL.endsWith('.jpeg')) {
+            fileType = 'image';
+          }
+        }
+        
+        if (fileType !== 'unknown') {
+          return fileType;
+        }
+        
+        return 'unknown';
+      } catch (error) {
+        console.error('Error detecting file type:', error);
+        return 'unknown';
+      }
+    }
+    
+    // Function to show the appropriate viewer based on file type
+    function showViewer(fileType) {
+      // Hide all viewers first
+      pdfViewer.style.display = 'none';
+      imageViewer.style.display = 'none';
+      wordViewer.style.display = 'none';
+      defaultViewer.style.display = 'none';
+      fileTypeMessage.classList.add('d-none');
+      
+      // Show the appropriate viewer based on file type
+      switch (fileType) {
+        case 'pdf':
+          pdfViewer.style.display = 'block';
+          activeViewer = pdfViewer;
+          // Enable zoom controls
+          zoomInBtn.disabled = false;
+          zoomOutBtn.disabled = false;
+          // Update Open With button
+          openWithBtn.innerHTML = '<i class="fas fa-file-pdf me-1"></i> Open in PDF Viewer';
+          break;
+          
+        case 'image':
+          imageViewer.style.display = 'block';
+          activeViewer = resumeImage;
+          // Enable zoom controls
+          zoomInBtn.disabled = false;
+          zoomOutBtn.disabled = false;
+          // Update Open With button
+          openWithBtn.innerHTML = '<i class="fas fa-image me-1"></i> Open Image';
+          break;
+          
+        case 'word':
+          wordViewer.style.display = 'block';
+          activeViewer = wordViewer;
+          // Disable zoom controls for Word documents
+          zoomInBtn.disabled = true;
+          zoomOutBtn.disabled = true;
+          // Update Open With button
+          openWithBtn.innerHTML = '<i class="fas fa-file-word me-1"></i> Open with Word';
+          break;
+          
+        default:
+          // Unknown file type, show default viewer with warning
+          defaultViewer.style.display = 'block';
+          activeViewer = defaultViewer;
+          fileTypeMessage.classList.remove('d-none');
+          fileTypeText.textContent = 'This file type may not display correctly in the browser. Please download to view.';
+          // Disable zoom controls
+          zoomInBtn.disabled = true;
+          zoomOutBtn.disabled = true;
+          break;
+      }
+    }
+    
+    // Detect and show the appropriate viewer when page loads
+    detectFileType().then(fileType => {
+      showViewer(fileType);
+    });
+
     
     // Toggle between normal and fullscreen view
     togglePdfViewBtn.addEventListener('click', function() {
-      pdfViewer.classList.toggle('fullscreen');
-      isFullscreen = pdfViewer.classList.contains('fullscreen');
-      
-      // Update button text
-      if (isFullscreen) {
-        togglePdfViewBtn.innerHTML = '<i class="fas fa-compress me-1"></i> Normal View';
-        document.body.style.overflow = 'hidden'; // Prevent scrolling when in fullscreen
-      } else {
-        togglePdfViewBtn.innerHTML = '<i class="fas fa-expand me-1"></i> Toggle View';
-        document.body.style.overflow = ''; // Restore scrolling
+      if (activeViewer) {
+        // Toggle fullscreen class on the active viewer
+        if (activeViewer === resumeImage) {
+          // For images, apply to the container
+          imageViewer.classList.toggle('fullscreen');
+          isFullscreen = imageViewer.classList.contains('fullscreen');
+        } else {
+          // For iframes and other elements
+          activeViewer.classList.toggle('fullscreen');
+          isFullscreen = activeViewer.classList.contains('fullscreen');
+        }
+        
+        // Update button text
+        if (isFullscreen) {
+          togglePdfViewBtn.innerHTML = '<i class="fas fa-compress me-1"></i> Normal View';
+          document.body.style.overflow = 'hidden'; // Prevent scrolling when in fullscreen
+        } else {
+          togglePdfViewBtn.innerHTML = '<i class="fas fa-expand me-1"></i> Toggle View';
+          document.body.style.overflow = ''; // Restore scrolling
+        }
       }
     });
     
-    // Fullscreen toggle button inside the PDF viewer
+    // Fullscreen toggle button inside the resume viewer
     fullscreenToggleBtn.addEventListener('click', function() {
-      pdfViewer.classList.toggle('fullscreen');
-      isFullscreen = pdfViewer.classList.contains('fullscreen');
-      
-      // Update button icon
-      if (isFullscreen) {
-        fullscreenToggleBtn.innerHTML = '<i class="fas fa-compress"></i>';
-        togglePdfViewBtn.innerHTML = '<i class="fas fa-compress me-1"></i> Normal View';
-        document.body.style.overflow = 'hidden';
-      } else {
-        fullscreenToggleBtn.innerHTML = '<i class="fas fa-expand"></i>';
-        togglePdfViewBtn.innerHTML = '<i class="fas fa-expand me-1"></i> Toggle View';
-        document.body.style.overflow = '';
+      if (activeViewer) {
+        // Toggle fullscreen class on the active viewer
+        if (activeViewer === resumeImage) {
+          // For images, apply to the container
+          imageViewer.classList.toggle('fullscreen');
+          isFullscreen = imageViewer.classList.contains('fullscreen');
+        } else {
+          // For iframes and other elements
+          activeViewer.classList.toggle('fullscreen');
+          isFullscreen = activeViewer.classList.contains('fullscreen');
+        }
+        
+        // Update button icon
+        if (isFullscreen) {
+          fullscreenToggleBtn.innerHTML = '<i class="fas fa-compress"></i>';
+          togglePdfViewBtn.innerHTML = '<i class="fas fa-compress me-1"></i> Normal View';
+          document.body.style.overflow = 'hidden';
+        } else {
+          fullscreenToggleBtn.innerHTML = '<i class="fas fa-expand"></i>';
+          togglePdfViewBtn.innerHTML = '<i class="fas fa-expand me-1"></i> Toggle View';
+          document.body.style.overflow = '';
+        }
       }
     });
     
@@ -565,31 +847,45 @@
       }
     });
     
-    // Apply zoom to the PDF iframe
+    // Apply zoom to the active viewer
     function applyZoom() {
-      // We need to apply the zoom to the iframe content
-      // This is a bit tricky since we can't directly manipulate the PDF content
-      // So we'll use CSS transform scale as a workaround
-      try {
-        const iframeDoc = pdfViewer.contentDocument || pdfViewer.contentWindow.document;
-        const pdfContent = iframeDoc.body;
-        
-        if (pdfContent) {
-          pdfContent.style.transformOrigin = 'center top';
-          pdfContent.style.transform = `scale(${currentScale})`;
+      if (!activeViewer) return;
+      
+      if (activeViewer === resumeImage) {
+        // For images, directly apply transform to the image element
+        resumeImage.style.transform = `scale(${currentScale})`;
+        resumeImage.style.transformOrigin = 'center top';
+      } else if (activeViewer === pdfViewer || activeViewer === defaultViewer) {
+        // For iframes (PDF and default viewer)
+        try {
+          // Try to access iframe content
+          const iframeDoc = activeViewer.contentDocument || activeViewer.contentWindow.document;
+          const content = iframeDoc.body;
+          
+          if (content) {
+            content.style.transformOrigin = 'center top';
+            content.style.transform = `scale(${currentScale})`;
+          }
+        } catch (e) {
+          // If we can't access the iframe content due to same-origin policy,
+          // apply transform to the iframe itself
+          activeViewer.style.transform = `scale(${currentScale})`;
+          activeViewer.style.transformOrigin = 'center top';
         }
-      } catch (e) {
-        // If we can't access the iframe content due to same-origin policy,
-        // we'll use a fallback method
-        pdfViewer.style.transform = `scale(${currentScale})`;
-        pdfViewer.style.transformOrigin = 'center top';
       }
+      // Word viewer doesn't support zoom, so we don't need to handle it
     }
     
     // Handle escape key to exit fullscreen
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape' && isFullscreen) {
-        pdfViewer.classList.remove('fullscreen');
+        // Exit fullscreen for the active viewer
+        if (activeViewer === resumeImage) {
+          imageViewer.classList.remove('fullscreen');
+        } else if (activeViewer) {
+          activeViewer.classList.remove('fullscreen');
+        }
+        
         isFullscreen = false;
         fullscreenToggleBtn.innerHTML = '<i class="fas fa-expand"></i>';
         togglePdfViewBtn.innerHTML = '<i class="fas fa-expand me-1"></i> Toggle View';

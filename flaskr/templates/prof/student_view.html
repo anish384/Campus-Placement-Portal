@@ -10,11 +10,19 @@
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
           <div>
             <h3 class="mb-0">Student Profile</h3>
-            <p class="mb-0 small">View your profile information</p>
+            <p class="mb-0 small">
+              {% if g.user['user_type'] == 'student' %}
+                View your profile information
+              {% else %}
+                Student details and qualifications
+              {% endif %}
+            </p>
           </div>
+          {% if g.user['user_type'] == 'student' and g.user['_id']|string == student._id|string %}
           <a href="{{ url_for('profile.student_profile') }}" class="btn btn-light btn-sm">
             <i class="fas fa-edit me-1"></i> Edit Profile
           </a>
+          {% endif %}
         </div>
         <div class="card-body">
           <!-- Personal Information -->
@@ -184,10 +192,61 @@
             </div>
           </div>
           
+          <!-- Resume Section -->
+          {% if student.resume_url %}
+          <div class="profile-section mb-4">
+            <h4 class="section-title border-bottom pb-2 mb-3">
+              <i class="fas fa-file-alt me-2"></i>Resume
+            </h4>
+            
+            <div class="row">
+              <div class="col-12 mb-3">
+                <div class="profile-field">
+                  <div class="field-label">
+                    {% if student.resume_url.endswith('.pdf') %}
+                      <i class="fas fa-file-pdf me-2"></i>PDF Resume
+                    {% elif student.resume_url.endswith('.doc') or student.resume_url.endswith('.docx') %}
+                      <i class="fas fa-file-word me-2"></i>Word Document
+                    {% elif student.resume_url.endswith('.jpg') or student.resume_url.endswith('.jpeg') %}
+                      <i class="fas fa-file-image me-2"></i>Image Resume
+                    {% else %}
+                      <i class="fas fa-file me-2"></i>Resume Document
+                    {% endif %}
+                  </div>
+                  <div class="field-value mb-3">
+                    Uploaded on: {{ student.resume_updated_at.strftime('%d %b %Y') if student.resume_updated_at else 'Unknown' }}
+                  </div>
+                  <div class="d-flex gap-2">
+                    {% if student.resume_url.endswith('.pdf') %}
+                    <a href="{{ url_for('profile.view_resume', student_id=student._id) }}" class="btn btn-primary" target="_blank">
+                      <i class="fas fa-file-pdf me-1"></i> View PDF
+                    </a>
+                    {% elif student.resume_url.endswith('.jpg') or student.resume_url.endswith('.jpeg') %}
+                    <a href="{{ url_for('profile.view_resume', student_id=student._id) }}" class="btn btn-primary" target="_blank">
+                      <i class="fas fa-image me-1"></i> View Image
+                    </a>
+                    {% elif student.resume_url.endswith('.doc') or student.resume_url.endswith('.docx') %}
+                    <div class="alert alert-info" role="alert">
+                      <i class="fas fa-info-circle me-1"></i> Word documents cannot be viewed directly in browser.
+                    </div>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('profile.download_resume', student_id=student._id) }}" class="btn btn-outline-primary">
+                      <i class="fas fa-download me-1"></i> Download
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          
           <div class="d-grid gap-2">
+            {% if g.user['user_type'] == 'student' and g.user['_id']|string == student._id|string %}
             <a href="{{ url_for('profile.student_profile') }}" class="btn btn-primary">
               <i class="fas fa-edit me-2"></i>Edit Profile
             </a>
+            {% endif %}
             <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
               <i class="fas fa-arrow-left me-2"></i>Back to Home
             </a>
