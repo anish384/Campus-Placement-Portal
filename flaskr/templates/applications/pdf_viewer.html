@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Viewer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<style>
+  body {
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    background-color: #f5f5f5;
+  }
+  
+  .pdf-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .toolbar {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+  }
+  
+  .toolbar-left {
+    display: flex;
+    align-items: center;
+  }
+  
+  .toolbar-right {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .toolbar-title {
+    font-size: 1.2rem;
+    margin-left: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
+  
+  .toolbar-button {
+    background-color: #444;
+    border: none;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.2s;
+  }
+  
+  .toolbar-button:hover {
+    background-color: #555;
+  }
+  
+  .toolbar-button i {
+    font-size: 14px;
+  }
+  
+  .pdf-frame {
+    flex: 1;
+    width: 100%;
+    height: calc(100vh - 60px);
+    border: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: white;
+    z-index: 1;
+  }
+</style>
+
+<div class="pdf-container">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <a href="{{ url_for('applications.view_application', application_id=application_id) }}" class="toolbar-button">
+        <i class="fas fa-arrow-left"></i> Back
+      </a>
+      <div class="toolbar-title">{{ student_name }}'s Resume</div>
+    </div>
+    <div class="toolbar-right">
+      <a href="{{ url_for('profile.download_resume', student_id=student_id) }}" class="toolbar-button">
+        <i class="fas fa-download"></i> Download
+      </a>
+    </div>
+  </div>
+  
+  <!-- PDF iframe to display the resume -->
+  <iframe id="pdfFrame" class="pdf-frame" src="{{ url_for('profile.view_resume', student_id=student_id) }}" title="Resume PDF"></iframe>
+</div>
+
+<script>
+  // No JavaScript needed for the simplified PDF viewer
+</script>
+</body>
+</html>

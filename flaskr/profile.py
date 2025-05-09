@@ -1,12 +1,27 @@
-from flask import (Blueprint, flash, g, redirect, render_template, request, session, url_for)
+from flask import (Blueprint, flash, g, redirect, render_template, request, session, url_for, send_file, current_app)
 from werkzeug.exceptions import abort
+from werkzeug.utils import secure_filename
 from bson.objectid import ObjectId
 import re
 import datetime
+import os
+import uuid
 from flaskr.auth import login_required, student_required, recruiter_required
 from flaskr.db import get_db
 
 bp = Blueprint('profile', __name__, url_prefix='/profile')
+
+# Configure upload folder
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'uploads')
+RESUME_FOLDER = os.path.join(UPLOAD_FOLDER, 'resumes')
+ALLOWED_EXTENSIONS = {'pdf'}
+MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB
+
+# Create upload directories if they don't exist
+os.makedirs(RESUME_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @bp.route('/')
 @login_required
@@ -29,16 +44,89 @@ def user():
     return render_template('prof/user.html')
 
 @bp.route('/student/view')
-@student_required
-def student_view():
+@bp.route('/student/view/<student_id>')
+@login_required
+def student_view(student_id=None):
     """Display student profile view"""
-    return render_template('prof/student_view.html', student=g.user)
+    db = get_db()
+    
+    # If student_id is provided, load that student's profile
+    # Only recruiters can view other students' profiles
+    if student_id and g.user['user_type'] == 'recruiter':
+        student = db['students'].find_one({'_id': ObjectId(student_id)})
+        if not student:
+            flash('Student not found', 'error')
+            return redirect(url_for('index'))
+    elif g.user['user_type'] == 'student':
+        # Students can only view their own profile
+        student = g.user
+    else:
+        flash('You do not have permission to view this profile', 'error')
+        return redirect(url_for('index'))
+    
+    return render_template('prof/student_view.html', student=student)
 
 @bp.route('/recruiter/view')
 @recruiter_required
 def recruiter_view():
     """Display recruiter profile view"""
     return render_template('prof/recruiter_view.html', recruiter=g.user)
+
+@bp.route('/resume/<student_id>')
+@login_required
+def download_resume(student_id):
+    """Download a student's resume"""
+    db = get_db()
+    
+    # Get the student
+    student = db['students'].find_one({'_id': ObjectId(student_id)})
+    
+    if not student or not student.get('resume_url'):
+        flash('Resume not found', 'error')
+        return redirect(url_for('index'))
+    
+    # Security check: Only allow recruiters or the student themselves to view the resume
+    if g.user['user_type'] != 'recruiter' and str(g.user['_id']) != str(student['_id']):
+        flash('You do not have permission to view this resume', 'error')
+        return redirect(url_for('index'))
+    
+    # Get the resume file path
+    resume_path = os.path.join(RESUME_FOLDER, student['resume_url'])
+    
+    if not os.path.exists(resume_path):
+        flash('Resume file not found', 'error')
+        return redirect(url_for('index'))
+    
+    # Generate a display filename
+    display_filename = f"{student['full_name'].replace(' ', '_')}_Resume.pdf"
+    
+    # Return the file
+    return send_file(resume_path, as_attachment=True, download_name=display_filename)
+
+@bp.route('/resume/view/<student_id>')
+@login_required
+def view_resume(student_id):
+    """View a student's resume inline (not as download)"""
+    db = get_db()
+    student = db['students'].find_one({'_id': ObjectId(student_id)})
+    
+    if not student or not student.get('resume_url'):
+        flash('Resume not found', 'error')
+        return redirect(url_for('index'))
+    
+    # Check if the current user is the student or a recruiter
+    if g.user['user_type'] != 'recruiter' and str(g.user['_id']) != str(student['_id']):
+        flash('You do not have permission to view this resume', 'error')
+        return redirect(url_for('index'))
+    
+    resume_path = os.path.join(RESUME_FOLDER, student['resume_url'])
+    
+    if not os.path.exists(resume_path):
+        flash('Resume file not found', 'error')
+        return redirect(url_for('index'))
+    
+    # Return the file for inline viewing (not as attachment)
+    return send_file(resume_path, mimetype='application/pdf')
 
 @bp.route('/student', methods=('GET', 'POST'))
 @student_required
@@ -71,6 +159,9 @@ def student_profile():
         soft_skills = request.form.get('soft_skills', '').strip()
         certifications = request.form.get('certifications', '').strip()
         
+        # Get resume file
+        resume_file = request.files.get('resume')
+        
         error = None
         
         # Phone number validation: exactly 10 digits
@@ -101,6 +192,11 @@ def student_profile():
             error = 'Graduation year is required.'
         elif not cgpa:
             error = 'CGPA is required.'
+        # Resume validation - required if not already uploaded
+        elif not student.get('resume_url') and (not resume_file or resume_file.filename == ''):
+            error = 'Resume is required. Please upload your resume in PDF format.'
+        elif resume_file and resume_file.filename != '' and not allowed_file(resume_file.filename):
+            error = 'Only PDF files are allowed for resume upload.'
             
         if error is None:
             try:
@@ -153,6 +249,29 @@ def student_profile():
                         flash(error, 'error')
                         return render_template('prof/student_profile.html', student=student)
                     
+                    # Handle resume upload if file is provided
+                    if resume_file and resume_file.filename != '':
+                        # Generate unique filename for the resume
+                        filename = secure_filename(resume_file.filename)
+                        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+                        file_path = os.path.join(RESUME_FOLDER, unique_filename)
+                        
+                        # Save the file
+                        resume_file.save(file_path)
+                        
+                        # Delete old file if exists
+                        old_resume = student.get('resume_url')
+                        if old_resume and os.path.exists(os.path.join(RESUME_FOLDER, old_resume)):
+                            try:
+                                os.remove(os.path.join(RESUME_FOLDER, old_resume))
+                            except Exception as e:
+                                print(f"Error removing old resume: {e}")
+                        
+                        # Add resume data to update
+                        update_data['resume_url'] = unique_filename
+                        update_data['resume_filename'] = filename
+                        update_data['resume_updated_at'] = datetime.datetime.now()
+                
                     # Update student profile
                     db['students'].update_one(
                         {'_id': ObjectId(student['_id'])},
@@ -242,31 +361,38 @@ def recruiter_profile():
                     else:
                         default_min_cgpa = None
                         
-                    # Update recruiter profile
+                    # Create update data dictionary
+                    update_data = {
+                        'full_name': full_name,
+                        'phone': formatted_phone,
+                        'company_name': company_name,
+                        'company_website': company_website,
+                        'linkedin_url': linkedin_url,
+                        'industry': industry,
+                        'designation': designation,
+                        'default_min_cgpa': default_min_cgpa,
+                        'default_eligible_branches': default_eligible_branches,
+                        'default_skills': default_skills,
+                        'default_job_role': default_job_role,
+                        'default_job_type': default_job_type,
+                        'profile_complete': True,
+                        'updated_at': datetime.datetime.now()
+                    }
+                    
+                    # Update recruiter profile in database
                     db['recruiters'].update_one(
                         {'_id': ObjectId(recruiter['_id'])},
-                        {'$set': {
-                            'full_name': full_name,
-                            'phone': formatted_phone,
-                            'company_name': company_name,
-                            'company_website': company_website,
-                            'linkedin_url': linkedin_url,
-                            'industry': industry,
-                            'designation': designation,
-                            'default_min_cgpa': default_min_cgpa,
-                            'default_eligible_branches': default_eligible_branches,
-                            'default_skills': default_skills,
-                            'default_job_role': default_job_role,
-                            'default_job_type': default_job_type,
-                            'profile_complete': True,
-                            'updated_at': datetime.datetime.now()
-                        }}
+                        {'$set': update_data}
                     )
+                    
+                    # Update the session user data
+                    g.user.update(update_data)
                 except Exception as e:
                     error = f'An error occurred while updating your profile: {str(e)}'
             
-            flash('Profile updated successfully!')
-            return redirect(url_for('index'))
+            if error is None:
+                flash('Profile updated successfully!', 'success')
+                return redirect(url_for('profile.recruiter_view'))
             
         flash(error)
     

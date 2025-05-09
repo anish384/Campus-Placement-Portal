@@ -14,7 +14,7 @@
         <div class="card-body">
           
           
-          <form method="post" class="needs-validation" novalidate>
+          <form method="post" class="needs-validation" enctype="multipart/form-data" novalidate>
             <!-- Personal Information -->
             <div class="form-section mb-4">
               <h4 class="section-title border-bottom pb-2 mb-3">Personal Information</h4>
@@ -185,9 +185,41 @@
                 <textarea class="form-control" name="certifications" id="certifications" rows="2" placeholder="Enter your certifications (e.g., AWS Certified Developer, Google Cloud Engineer)">{{ student.certifications if student.certifications else '' }}</textarea>
                 <div class="form-text">Separate certifications with semicolons</div>
               </div>
-              
-
             </div>
+            
+            <!-- Resume Upload Section -->
+            <div class="form-section mb-4">
+              <h4 class="section-title border-bottom pb-2 mb-3">Resume Upload</h4>
+              
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <span>Your resume is required for job applications. Recruiters will review your resume when considering your application.</span>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="resume" class="form-label"><i class="fas fa-file-pdf me-2"></i>Upload Resume (PDF)</label>
+                <input type="file" class="form-control" name="resume" id="resume" accept=".pdf" {% if not student.resume_url %}required{% endif %}>
+                <div class="invalid-feedback">Please upload your resume in PDF format.</div>
+                <div class="form-text">Maximum file size: 5MB. Only PDF files are accepted.</div>
+              </div>
+              
+              {% if student.resume_url %}
+              <div class="current-resume mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                  <i class="fas fa-file-pdf text-danger fs-4 me-3"></i>
+                  <div>
+                    <h6 class="mb-0">Current Resume</h6>
+                    <p class="mb-0 small text-muted">Uploaded on: {{ student.resume_updated_at.strftime('%d %b %Y') if student.resume_updated_at else 'Unknown' }}</p>
+                  </div>
+                  <div class="ms-auto">
+                    <a href="{{ url_for('profile.download_resume', student_id=student._id) }}" class="btn btn-sm btn-outline-primary me-2">
+                      <i class="fas fa-download me-1"></i> View
+                    </a>
+                  </div>
+                </div>
+                <div class="form-text mt-2">Upload a new file to replace your current resume.</div>
+              </div>
+              {% endif %}
             
             <div class="d-grid gap-2">
               <button type="submit" class="btn btn-primary btn-lg">

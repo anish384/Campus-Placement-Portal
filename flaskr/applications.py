@@ -27,6 +27,53 @@ def job_applications(job_id):
     
     return render_template('applications/job_applications.html', job=job, applications=applications)
 
+@bp.route('/view/<application_id>')
+@recruiter_required
+def view_application(application_id):
+    """View detailed application with integrated PDF viewer."""
+    db = get_db()
+    
+    # Get the application
+    application = db['applications'].find_one({'_id': ObjectId(application_id)})
+    if application is None:
+        abort(404)
+    
+    # Get the job
+    job = db['jobs'].find_one({'_id': application['job_id']})
+    if job is None:
+        abort(404)
+    
+    # Check if the current user is the creator of this job listing
+    if g.user['_id'] != job['recruiter_id']:
+        abort(403)
+    
+    return render_template('applications/application_view.html', application=application, job=job)
+
+@bp.route('/view-pdf/<application_id>')
+@recruiter_required
+def view_pdf(application_id):
+    """View dedicated PDF viewer for an application's resume."""
+    db = get_db()
+    
+    # Get the application
+    application = db['applications'].find_one({'_id': ObjectId(application_id)})
+    if application is None:
+        abort(404)
+    
+    # Get the job
+    job = db['jobs'].find_one({'_id': application['job_id']})
+    if job is None:
+        abort(404)
+    
+    # Check if the current user is the creator of this job listing
+    if g.user['_id'] != job['recruiter_id']:
+        abort(403)
+    
+    return render_template('applications/pdf_viewer.html', 
+                           application_id=application_id,
+                           student_id=application['student_id'],
+                           student_name=application['student_name'])
+
 @bp.route('/<application_id>/update-status', methods=('POST',))
 @recruiter_required
 def update_status(application_id):
