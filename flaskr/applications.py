@@ -9,6 +9,7 @@ import datetime
 from flaskr.db import get_db
 from flaskr.auth import login_required, recruiter_required, student_required
 from flaskr.jobs import get_job
+from flaskr.notifications import notify_student_shortlisted, notify_student_selected
 
 bp = Blueprint('applications', __name__, url_prefix='/applications')
 
@@ -151,7 +152,28 @@ def update_status(application_id):
         'created_at': datetime.datetime.now()
     })
     
-    flash('Application status updated successfully!', 'success')
+    # Get the student for SMS notification
+    student = db['students'].find_one({'_id': application['student_id']})
+    
+    # Send SMS notification based on application status
+    sms_sent = False
+    if new_status == 'Shortlisted' and student:
+        # Send shortlisted notification
+        sms_sent = notify_student_shortlisted(student, job)
+        if sms_sent:
+            flash('Application status updated and SMS notification sent!', 'success')
+        else:
+            flash('Application status updated, but SMS notification could not be sent.', 'warning')
+    elif new_status == 'Selected' and student:
+        # Send selected notification
+        sms_sent = notify_student_selected(student, job)
+        if sms_sent:
+            flash('Application status updated and SMS notification sent!', 'success')
+        else:
+            flash('Application status updated, but SMS notification could not be sent.', 'warning')
+    else:
+        flash('Application status updated successfully!', 'success')
+    
     return redirect(url_for('applications.job_applications', job_id=str(job['_id'])))
 
 @bp.route('/<application_id>/schedule-interview', methods=('GET', 'POST'))

@@ -2,6 +2,10 @@ import os
 import datetime
 from flask import Flask
 from flask_mail import Mail
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)

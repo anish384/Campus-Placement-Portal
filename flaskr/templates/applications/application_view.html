@@ -615,10 +615,14 @@
                 </div>
               </div>
             </div>
+            <div class="alert alert-info mt-3">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Note:</strong> When you change the status to "Shortlisted" or "Selected", an SMS notification will be automatically sent to the student if they have a valid phone number.
+            </div>
           </div>
-          <div class="modal-footer bg-light">
+          <div class="modal-footer justify-content-between">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Update Status</button>
+            <button type="submit" class="btn btn-primary">Update Status</button>
           </div>
         </form>
       </div>
@@ -634,9 +638,9 @@
   // Pre-define variables from server-side to avoid Jinja2 template syntax in JavaScript
   var RESUME_VIEW_URL = '{{ url_for("profile.view_resume", student_id=application.student_id) }}';
   {% if application.resume_url %}
-  var SERVER_RESUME_URL = '{{ application.resume_url }}';
+    var SERVER_RESUME_URL = '{{ application.resume_url }}';
   {% else %}
-  var SERVER_RESUME_URL = '';
+    var SERVER_RESUME_URL = '';
   {% endif %}
 </script>
 
