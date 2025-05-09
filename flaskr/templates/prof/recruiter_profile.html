@@ -13,7 +13,31 @@
         </div>
         <div class="card-body">
           
-          <form method="post" class="needs-validation" novalidate>
+          <div class="row mb-4">
+            <div class="col-md-3 text-center">
+              {% if recruiter.profile_photo_url %}
+                <img src="{{ url_for('profile.profile_photo', filename=recruiter.profile_photo_url) }}" class="img-thumbnail rounded-circle profile-img" alt="Profile Photo" style="width: 150px; height: 150px; object-fit: cover;">
+              {% else %}
+                <div class="profile-placeholder rounded-circle d-flex align-items-center justify-content-center bg-light" style="width: 150px; height: 150px; margin: 0 auto;">
+                  <i class="fas fa-building fa-5x text-secondary"></i>
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-9 d-flex align-items-center">
+              <div>
+                <h4>{{ recruiter.full_name if recruiter.full_name else 'Complete Your Profile' }}</h4>
+                <p class="text-muted mb-0">{{ recruiter.email }}</p>
+                <p class="text-muted mb-0">{{ recruiter.company_name if recruiter.company_name else '' }}</p>
+                {% if recruiter.profile_complete %}
+                  <span class="badge bg-success mt-2">Profile Complete</span>
+                {% else %}
+                  <span class="badge bg-warning mt-2">Profile Incomplete</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          <form method="post" class="needs-validation" enctype="multipart/form-data" novalidate>
             <!-- Personal Information -->
             <div class="form-section mb-4">
               <h4 class="section-title border-bottom pb-2 mb-3">Personal Information</h4>
@@ -35,9 +59,28 @@
               
               <div class="form-group mb-3">
                 <label for="designation" class="form-label"><i class="fas fa-id-badge me-2"></i>Your Designation</label>
-                <input class="form-control" name="designation" id="designation" placeholder="Enter your role in the company" required value="{{ recruiter.designation if recruiter.designation else '' }}">
+                <input class="form-control" name="designation" id="designation" placeholder="Enter your designation (e.g., HR Manager, Talent Acquisition)" required value="{{ recruiter.designation if recruiter.designation else '' }}">
                 <div class="invalid-feedback">Please enter your designation.</div>
               </div>
+              
+              <div class="form-group mb-3">
+                <label for="profile_photo" class="form-label"><i class="fas fa-camera me-2"></i>Profile Photo (Optional)</label>
+                <input type="file" class="form-control" name="profile_photo" id="profile_photo" accept=".jpg,.jpeg,.png">
+                <div class="invalid-feedback">Please upload a valid image file.</div>
+                <div class="form-text">Maximum file size: 5MB. Accepted formats: JPG, JPEG, PNG.</div>
+              </div>
+              
+              {% if recruiter.profile_photo_url %}
+              <div class="current-photo mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                  <img src="{{ url_for('profile.profile_photo', filename=recruiter.profile_photo_url) }}" class="img-thumbnail me-3" alt="Profile Photo" style="width: 60px; height: 60px; object-fit: cover;">
+                  <div>
+                    <h6 class="mb-0">Current Photo</h6>
+                    <p class="mb-0 small text-muted">Uploaded on: {{ recruiter.photo_updated_at.strftime('%d %b %Y') if recruiter.photo_updated_at else 'Unknown' }}</p>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
             </div>
             
             <!-- Company Information -->

@@ -129,14 +129,40 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if request.endpoint == 'profile.user' or request.endpoint == 'profile.student_view' or request.endpoint == 'profile.recruiter_view' or request.endpoint == 'profile.student_profile' or request.endpoint == 'profile.recruiter_profile' %}active{% endif %}" 
                            href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user me-1 nav-icon"></i> {{ g.user.username }}
+                            {% if g.user.profile_photo_url %}
+                            <img src="{{ url_for('profile.profile_photo', filename=g.user.profile_photo_url) }}" class="rounded-circle me-1" alt="Profile Photo" style="width: 24px; height: 24px; object-fit: cover;">
+                            {% else %}
+                            <i class="fas fa-user me-1 nav-icon"></i>
+                            {% endif %}
+                            {{ g.user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm" aria-labelledby="userDropdown">
+                            <!-- Profile Photo Preview -->
+                            {% if g.user.profile_photo_url %}
+                            <li class="px-3 py-2 text-center">
+                                <img src="{{ url_for('profile.profile_photo', filename=g.user.profile_photo_url) }}" class="rounded-circle" alt="Profile Photo" style="width: 64px; height: 64px; object-fit: cover;">
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('profile.user') }}">
                                     <i class="fas fa-id-card me-2 text-muted"></i> View Profile
                                 </a>
                             </li>
+                            
+                            <li>
+                                {% if g.user.user_type == 'student' %}
+                                <a class="dropdown-item" href="{{ url_for('profile.student_profile') }}">
+                                    <i class="fas fa-user-edit me-2 text-muted"></i> Edit Profile
+                                </a>
+                                {% elif g.user.user_type == 'recruiter' %}
+                                <a class="dropdown-item" href="{{ url_for('profile.recruiter_profile') }}">
+                                    <i class="fas fa-user-edit me-2 text-muted"></i> Edit Profile
+                                </a>
+                                {% endif %}
+                            </li>
+                            
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('auth.logout') }}">

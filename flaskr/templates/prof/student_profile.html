@@ -12,7 +12,28 @@
           <p class="mb-0 small">Please provide your details to apply for jobs</p>
         </div>
         <div class="card-body">
-          
+          <div class="row mb-4">
+            <div class="col-md-3 text-center">
+              {% if student.profile_photo_url %}
+                <img src="{{ url_for('profile.profile_photo', filename=student.profile_photo_url) }}" class="img-thumbnail rounded-circle profile-img" alt="Profile Photo" style="width: 150px; height: 150px; object-fit: cover;">
+              {% else %}
+                <div class="profile-placeholder rounded-circle d-flex align-items-center justify-content-center bg-light" style="width: 150px; height: 150px; margin: 0 auto;">
+                  <i class="fas fa-user-circle fa-5x text-secondary"></i>
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-9 d-flex align-items-center">
+              <div>
+                <h4>{{ student.full_name if student.full_name else 'Complete Your Profile' }}</h4>
+                <p class="text-muted mb-0">{{ student.email }}</p>
+                {% if student.profile_complete %}
+                  <span class="badge bg-success mt-2">Profile Complete</span>
+                {% else %}
+                  <span class="badge bg-warning mt-2">Profile Incomplete</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
           
           <form method="post" class="needs-validation" enctype="multipart/form-data" novalidate>
             <!-- Personal Information -->
@@ -190,13 +211,38 @@
               </div>
             </div>
             
-            <!-- Resume Upload Section -->
+            <!-- Profile Photo & Resume Upload Section -->
             <div class="form-section mb-4">
-              <h4 class="section-title border-bottom pb-2 mb-3">Resume Upload</h4>
+              <h4 class="section-title border-bottom pb-2 mb-3">Profile Photo & Resume</h4>
               
-              <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                <span>Your resume is required for job applications. Recruiters will review your resume when considering your application.</span>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group mb-3">
+                    <label for="profile_photo" class="form-label"><i class="fas fa-camera me-2"></i>Profile Photo (Optional)</label>
+                    <input type="file" class="form-control" name="profile_photo" id="profile_photo" accept=".jpg,.jpeg,.png">
+                    <div class="invalid-feedback">Please upload a valid image file.</div>
+                    <div class="form-text">Maximum file size: 5MB. Accepted formats: JPG, JPEG, PNG.</div>
+                  </div>
+                  
+                  {% if student.profile_photo_url %}
+                  <div class="current-photo mb-3">
+                    <div class="d-flex align-items-center p-3 border rounded">
+                      <img src="{{ url_for('profile.profile_photo', filename=student.profile_photo_url) }}" class="img-thumbnail me-3" alt="Profile Photo" style="width: 60px; height: 60px; object-fit: cover;">
+                      <div>
+                        <h6 class="mb-0">Current Photo</h6>
+                        <p class="mb-0 small text-muted">Uploaded on: {{ student.photo_updated_at.strftime('%d %b %Y') if student.photo_updated_at else 'Unknown' }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                  <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span>Your resume is required for job applications. Recruiters will review your resume when considering your application.</span>
+                  </div>
+                </div>
               </div>
               
               <div class="form-group mb-3">

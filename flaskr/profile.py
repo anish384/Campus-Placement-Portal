@@ -6,6 +6,7 @@ import re
 import datetime
 import os
 import uuid
+from flask import Blueprint, flash, g, redirect, render_template, request, url_for, send_from_directory
 from flaskr.auth import login_required, student_required, recruiter_required
 from flaskr.db import get_db
 
@@ -14,14 +15,20 @@ bp = Blueprint('profile', __name__, url_prefix='/profile')
 # Configure upload folder
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'uploads')
 RESUME_FOLDER = os.path.join(UPLOAD_FOLDER, 'resumes')
+PROFILE_PHOTOS_FOLDER = os.path.join(UPLOAD_FOLDER, 'profile_photos')
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'jpg', 'jpeg'}
+ALLOWED_PHOTO_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB
 
 # Create upload directories if they don't exist
 os.makedirs(RESUME_FOLDER, exist_ok=True)
+os.makedirs(PROFILE_PHOTOS_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def allowed_photo_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PHOTO_EXTENSIONS
 
 @bp.route('/')
 @login_required
@@ -152,6 +159,7 @@ def student_profile():
     """Handle student profile completion and updates"""
     db = get_db()
     student = g.user
+    form_data = {}
     
     if request.method == 'POST':
         # Get form data - Personal Information
@@ -177,8 +185,37 @@ def student_profile():
         soft_skills = request.form.get('soft_skills', '').strip()
         certifications = request.form.get('certifications', '').strip()
         
-        # Get resume file
+        # Get resume file and profile photo
         resume_file = request.files.get('resume')
+        profile_photo = request.files.get('profile_photo')
+        
+        # Create form_data dictionary to preserve user input in case of validation errors
+        form_data = {
+            '_id': student['_id'],
+            'email': student['email'],
+            'full_name': full_name,
+            'phone': f"+91{phone}" if phone else '',
+            'dob': dob,  # Keep as string for now
+            'gender': gender,
+            'address': address,
+            'college': college,
+            'branch': branch,
+            'degree': degree,
+            'current_year': current_year,
+            'graduation_year': graduation_year,
+            'cgpa': cgpa,
+            'tenth_marks': tenth_marks,
+            'twelfth_marks': twelfth_marks,
+            'backlogs': backlogs,
+            'technical_skills': technical_skills,
+            'soft_skills': soft_skills,
+            'certifications': certifications,
+            'resume_url': student.get('resume_url'),
+            'profile_photo_url': student.get('profile_photo_url'),
+            'resume_updated_at': student.get('resume_updated_at'),
+            'photo_updated_at': student.get('photo_updated_at'),
+            'profile_complete': student.get('profile_complete', False)
+        }
         
         error = None
         
@@ -215,6 +252,8 @@ def student_profile():
             error = 'Resume is required. Please upload your resume in PDF, Word (doc/docx), or JPEG format.'
         elif resume_file and resume_file.filename != '' and not allowed_file(resume_file.filename):
             error = 'Only PDF, Word (doc/docx), and JPEG files are allowed for resume upload.'
+        elif profile_photo and profile_photo.filename != '' and not allowed_photo_file(profile_photo.filename):
+            error = 'Only JPG, JPEG, and PNG files are allowed for profile photos.'
             
         if error is None:
             try:
@@ -267,28 +306,36 @@ def student_profile():
                         flash(error, 'error')
                         return render_template('prof/student_profile.html', student=student)
                     
-                    # Handle resume upload if file is provided
+                    # Handle resume upload if provided
                     if resume_file and resume_file.filename != '':
-                        # Generate unique filename for the resume
+                        # Generate a unique filename
                         filename = secure_filename(resume_file.filename)
-                        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+                        file_ext = filename.rsplit('.', 1)[1].lower()
+                        unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
                         file_path = os.path.join(RESUME_FOLDER, unique_filename)
                         
                         # Save the file
                         resume_file.save(file_path)
                         
-                        # Delete old file if exists
-                        old_resume = student.get('resume_url')
-                        if old_resume and os.path.exists(os.path.join(RESUME_FOLDER, old_resume)):
-                            try:
-                                os.remove(os.path.join(RESUME_FOLDER, old_resume))
-                            except Exception as e:
-                                print(f"Error removing old resume: {e}")
-                        
-                        # Add resume data to update
+                        # Update resume URL in database
                         update_data['resume_url'] = unique_filename
                         update_data['resume_filename'] = filename
                         update_data['resume_updated_at'] = datetime.datetime.now()
+                    
+                    # Handle profile photo upload if provided
+                    if profile_photo and profile_photo.filename != '':
+                        # Generate a unique filename
+                        photo_filename = secure_filename(profile_photo.filename)
+                        photo_ext = photo_filename.rsplit('.', 1)[1].lower()
+                        unique_photo_filename = f"{uuid.uuid4().hex}.{photo_ext}"
+                        photo_path = os.path.join(PROFILE_PHOTOS_FOLDER, unique_photo_filename)
+                        
+                        # Save the file
+                        profile_photo.save(photo_path)
+                        
+                        # Update profile photo URL in database
+                        update_data['profile_photo_url'] = unique_photo_filename
+                        update_data['photo_updated_at'] = datetime.datetime.now()
                 
                     # Update student profile
                     db['students'].update_one(
@@ -304,12 +351,15 @@ def student_profile():
                 except DuplicateKeyError:
                     error = 'This phone number is already registered with another account.'
                     flash(error, 'error')
-                    return render_template('prof/student_profile.html', student=student)
+                    return render_template('prof/student_profile.html', student=form_data)
             except Exception as e:
                 error = f'An error occurred: {str(e)}'
                 flash(error, 'error')
+                return render_template('prof/student_profile.html', student=form_data)
         else:
             flash(error, 'error')
+            
+            return render_template('prof/student_profile.html', student=form_data)
     
     # Pre-populate form with existing data if available
     return render_template('prof/student_profile.html', student=student)
@@ -320,6 +370,7 @@ def recruiter_profile():
     """Handle recruiter profile completion and updates"""
     db = get_db()
     recruiter = g.user
+    form_data = {}
     
     if request.method == 'POST':
         # Get form data
@@ -330,6 +381,26 @@ def recruiter_profile():
         linkedin_url = request.form.get('linkedin_url', '').strip()
         industry = request.form.get('industry', '').strip()
         designation = request.form.get('designation', '').strip()
+        
+        # Get profile photo
+        profile_photo = request.files.get('profile_photo')
+        
+        # Create form_data dictionary to preserve user input in case of validation errors
+        formatted_phone = f"+91{phone}" if phone else ''
+        form_data = {
+            '_id': recruiter['_id'],
+            'email': recruiter['email'],
+            'full_name': full_name,
+            'phone': formatted_phone,
+            'company_name': company_name,
+            'company_website': company_website,
+            'linkedin_url': linkedin_url,
+            'industry': industry,
+            'designation': designation,
+            'profile_photo_url': recruiter.get('profile_photo_url'),
+            'photo_updated_at': recruiter.get('photo_updated_at'),
+            'profile_complete': recruiter.get('profile_complete', False)
+        }
         
         # Eligibility criteria and job details removed
         
@@ -350,6 +421,8 @@ def recruiter_profile():
             error = 'Industry is required.'
         elif not designation:
             error = 'Your designation is required.'
+        elif profile_photo and profile_photo.filename != '' and not allowed_photo_file(profile_photo.filename):
+            error = 'Only JPG, JPEG, and PNG files are allowed for profile photos.'
             
         if error is None:
             # Check if phone number is already used by another recruiter
@@ -361,6 +434,9 @@ def recruiter_profile():
             
             if existing_phone:
                 error = 'This phone number is already registered by another recruiter.'
+                
+                flash(error, 'error')
+                return render_template('prof/recruiter_profile.html', recruiter=form_data)
             else:
                 try:
                     # CGPA conversion removed
@@ -378,6 +454,21 @@ def recruiter_profile():
                         'updated_at': datetime.datetime.now()
                     }
                     
+                    # Handle profile photo upload if provided
+                    if profile_photo and profile_photo.filename != '':
+                        # Generate a unique filename
+                        photo_filename = secure_filename(profile_photo.filename)
+                        photo_ext = photo_filename.rsplit('.', 1)[1].lower()
+                        unique_photo_filename = f"{uuid.uuid4().hex}.{photo_ext}"
+                        photo_path = os.path.join(PROFILE_PHOTOS_FOLDER, unique_photo_filename)
+                        
+                        # Save the file
+                        profile_photo.save(photo_path)
+                        
+                        # Update profile photo URL in database
+                        update_data['profile_photo_url'] = unique_photo_filename
+                        update_data['photo_updated_at'] = datetime.datetime.now()
+                    
                     # Update recruiter profile in database
                     db['recruiters'].update_one(
                         {'_id': ObjectId(recruiter['_id'])},
@@ -388,12 +479,38 @@ def recruiter_profile():
                     g.user.update(update_data)
                 except Exception as e:
                     error = f'An error occurred while updating your profile: {str(e)}'
+                    
+                    flash(error, 'error')
+                    return render_template('prof/recruiter_profile.html', recruiter=form_data)
             
             if error is None:
                 flash('Profile updated successfully!', 'success')
                 return redirect(url_for('profile.recruiter_view'))
-            
-        flash(error)
+        
+        # If we get here, there was a validation error
+        flash(error, 'error')
+        
+        # Preserve form data by creating a temporary recruiter object with form values
+        form_data = {
+            '_id': recruiter['_id'],
+            'email': recruiter['email'],
+            'full_name': full_name,
+            'phone': f"+91{phone}",
+            'company_name': company_name,
+            'company_website': company_website,
+            'linkedin_url': linkedin_url,
+            'industry': industry,
+            'designation': designation,
+            'profile_photo_url': recruiter.get('profile_photo_url'),
+            'photo_updated_at': recruiter.get('photo_updated_at')
+        }
+        
+        return render_template('prof/recruiter_profile.html', recruiter=form_data)
     
     # Pre-populate form with existing data if available
     return render_template('prof/recruiter_profile.html', recruiter=recruiter)
+
+@bp.route('/profile-photo/<filename>')
+def profile_photo(filename):
+    """Serve profile photos"""
+    return send_from_directory(PROFILE_PHOTOS_FOLDER, filename)
