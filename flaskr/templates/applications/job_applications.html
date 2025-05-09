@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Applications for {{ job.title }}{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Job Details</h5>
+    </div>
+    <div class="card-body">
+      <h4>{{ job.title }}</h4>
+      <p class="text-muted">{{ job.company_name }} - {{ job.location }}</p>
+      <div class="row">
+        <div class="col-md-4">
+          <p><strong>Job Type:</strong> {{ job.job_type }}</p>
+        </div>
+        <div class="col-md-4">
+          <p><strong>Min CGPA:</strong> {{ job.min_cgpa }}</p>
+        </div>
+        <div class="col-md-4">
+          <p><strong>Deadline:</strong> {{ job.application_deadline.strftime('%d %b, %Y') }}</p>
+        </div>
+      </div>
+      <a href="{{ url_for('jobs.detail', id=job._id) }}" class="btn btn-outline-primary">View Job Details</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Applications ({{ applications|length }})</h5>
+      <div>
+        <button class="btn btn-sm btn-light" onclick="exportToCSV()">
+          <i class="fas fa-download"></i> Export
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      {% if applications %}
+        <div class="table-responsive">
+          <table class="table table-hover" id="applicationsTable">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>CGPA</th>
+                <th>Branch</th>
+                <th>Applied On</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in applications %}
+                <tr>
+                  <td>{{ app.student_name }}</td>
+                  <td>{{ app.student_cgpa }}</td>
+                  <td>{{ app.student_branch }}</td>
+                  <td>{{ app.created_at.strftime('%d %b, %Y') }}</td>
+                  <td>
+                    <span class="badge 
+                      {% if app.status == 'Applied' %}bg-secondary
+                      {% elif app.status == 'Shortlisted' %}bg-info
+                      {% elif app.status == 'Interview Scheduled' %}bg-primary
+                      {% elif app.status == 'Selected' %}bg-success
+                      {% elif app.status == 'Rejected' %}bg-danger
+                      {% else %}bg-secondary{% endif %}">
+                      {{ app.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton{{ loop.index }}" data-bs-toggle="dropdown" aria-expanded="false">
+                        Actions
+                      </button>
+                      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ loop.index }}">
+                        <li>
+                          <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#viewApplicationModal{{ app._id }}">
+                            <i class="fas fa-eye"></i> View Details
+                          </button>
+                        </li>
+                        <li>
+                          <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ app._id }}">
+                            <i class="fas fa-edit"></i> Update Status
+                          </button>
+                        </li>
+                        {% if app.status == 'Shortlisted' %}
+                        <li>
+                          <a href="{{ url_for('applications.schedule_interview', application_id=app._id) }}" class="dropdown-item">
+                            <i class="fas fa-calendar-alt"></i> Schedule Interview
+                          </a>
+                        </li>
+                        {% endif %}
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- View Application Modal -->
+                <div class="modal fade" id="viewApplicationModal{{ app._id }}" tabindex="-1" aria-labelledby="viewApplicationModalLabel{{ app._id }}" aria-hidden="true">
+                  <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                      <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="viewApplicationModalLabel{{ app._id }}">Application Details</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="row">
+                          <div class="col-md-6">
+                            <h5>Student Information</h5>
+                            <p><strong>Name:</strong> {{ app.student_name }}</p>
+                            <p><strong>Email:</strong> {{ app.student_email }}</p>
+                            <p><strong>Phone:</strong> {{ app.student_phone }}</p>
+                            <p><strong>CGPA:</strong> {{ app.student_cgpa }}</p>
+                            <p><strong>Branch:</strong> {{ app.student_branch }}</p>
+                          </div>
+                          <div class="col-md-6">
+                            <h5>Application Information</h5>
+                            <p><strong>Status:</strong> 
+                              <span class="badge 
+                                {% if app.status == 'Applied' %}bg-secondary
+                                {% elif app.status == 'Shortlisted' %}bg-info
+                                {% elif app.status == 'Interview Scheduled' %}bg-primary
+                                {% elif app.status == 'Selected' %}bg-success
+                                {% elif app.status == 'Rejected' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ app.status }}
+                              </span>
+                            </p>
+                            <p><strong>Applied On:</strong> {{ app.created_at.strftime('%d %b, %Y %H:%M') }}</p>
+                            {% if app.get('status_updated_at') %}
+                            <p><strong>Last Updated:</strong> {{ app.status_updated_at.strftime('%d %b, %Y %H:%M') }}</p>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Update Status Modal -->
+                <div class="modal fade" id="updateStatusModal{{ app._id }}" tabindex="-1" aria-labelledby="updateStatusModalLabel{{ app._id }}" aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="updateStatusModalLabel{{ app._id }}">Update Application Status</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <form action="{{ url_for('applications.update_status', application_id=app._id) }}" method="post">
+                        <div class="modal-body">
+                          <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" required>
+                              <option value="">Select Status</option>
+                              <option value="Applied" {% if app.status == 'Applied' %}selected{% endif %}>Applied</option>
+                              <option value="Shortlisted" {% if app.status == 'Shortlisted' %}selected{% endif %}>Shortlisted</option>
+                              <option value="Rejected" {% if app.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                              <option value="Selected" {% if app.status == 'Selected' %}selected{% endif %}>Selected</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-primary">Update Status</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info">
+          No applications have been received for this job yet.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  function exportToCSV() {
+    const table = document.getElementById("applicationsTable");
+    let csv = [];
+    let rows = table.querySelectorAll("tr");
+    
+    for (let i = 0; i < rows.length; i++) {
+      let row = [], cols = rows[i].querySelectorAll("td, th");
+      
+      for (let j = 0; j < cols.length - 1; j++) { // Skip the Actions column
+        // Get the text content, removing any badges or other HTML
+        let text = cols[j].textContent.trim();
+        row.push('"' + text.replace(/"/g, '""') + '"');
+      }
+      
+      csv.push(row.join(","));
+    }
+    
+    // Download CSV file
+    downloadCSV(csv.join("\n"), 'applications_{{ job.title }}.csv');
+  }
+
+  function downloadCSV(csv, filename) {
+    let csvFile = new Blob([csv], {type: "text/csv"});
+    let downloadLink = document.createElement("a");
+    
+    downloadLink.download = filename;
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = "none";
+    
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  }
+</script>
+{% endblock %}

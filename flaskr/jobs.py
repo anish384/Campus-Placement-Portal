@@ -16,6 +16,8 @@ def index():
     """Show all job listings with filtering options."""
     db = get_db()
     
+    # Retrieve job listings without debug messages
+    
     # Get filter parameters
     min_cgpa = request.args.get('min_cgpa', type=float)
     branch = request.args.get('branch')
@@ -41,25 +43,60 @@ def index():
     if location:
         query['location'] = {'$regex': location, '$options': 'i'}
     
-    # Get all job listings that match the query
-    jobs = list(db['jobs'].find(query).sort('created_at', -1))
-    
-    # Get unique values for filter dropdowns
-    all_branches = db['jobs'].distinct('eligible_branches')
-    all_companies = db['jobs'].distinct('company_name')
-    all_job_types = db['jobs'].distinct('job_type')
-    all_locations = db['jobs'].distinct('location')
-    
-    # Check eligibility for each job if user is a student
-    if g.user and g.user.get('user_type') == 'student':
-        student_cgpa = g.user.get('cgpa', 0)
-        student_branch = g.user.get('branch', '')
+    try:
+        # Get all job listings that match the query
+        jobs = list(db['jobs'].find(query).sort('created_at', -1))
         
+        # Process job listings without debug messages
+        
+        # Convert ObjectId to string for each job
         for job in jobs:
-            job['is_eligible'] = (
-                student_cgpa >= job.get('min_cgpa', 0) and
-                (not job.get('eligible_branches') or student_branch in job.get('eligible_branches', []))
-            )
+            job['_id'] = str(job['_id'])
+        
+        # Get unique values for filter dropdowns
+        all_branches = []
+        all_companies = []
+        all_job_types = []
+        all_locations = []
+        
+        # Get all jobs for dropdown values if no jobs match the query
+        all_jobs = list(db['jobs'].find())
+        
+        # Extract unique values for dropdowns
+        for job in all_jobs:
+            # Handle branches (which is a list)
+            if 'eligible_branches' in job and job['eligible_branches']:
+                for branch_item in job['eligible_branches']:
+                    if branch_item and branch_item not in all_branches:
+                        all_branches.append(branch_item)
+            
+            # Handle other fields
+            if 'company_name' in job and job['company_name'] and job['company_name'] not in all_companies:
+                all_companies.append(job['company_name'])
+            
+            if 'job_type' in job and job['job_type'] and job['job_type'] not in all_job_types:
+                all_job_types.append(job['job_type'])
+            
+            if 'location' in job and job['location'] and job['location'] not in all_locations:
+                all_locations.append(job['location'])
+        
+        # Check eligibility for each job if user is a student
+        if g.user and g.user.get('user_type') == 'student':
+            student_cgpa = g.user.get('cgpa', 0)
+            student_branch = g.user.get('branch', '')
+            
+            for job in jobs:
+                job['is_eligible'] = (
+                    student_cgpa >= job.get('min_cgpa', 0) and
+                    (not job.get('eligible_branches') or student_branch in job.get('eligible_branches', []))
+                )
+    except Exception as e:
+        flash(f'Error retrieving job listings: {str(e)}', 'error')
+        jobs = []
+        all_branches = []
+        all_companies = []
+        all_job_types = []
+        all_locations = []
     
     return render_template('jobs/index.html', 
                           jobs=jobs,
@@ -79,10 +116,14 @@ def index():
 @recruiter_required
 def create():
     """Create a new job listing."""
-    # Check if recruiter profile is complete
-    if not g.user.get('profile_complete', False):
-        flash('Please complete your profile before posting jobs.', 'warning')
-        return redirect(url_for('profile.recruiter_profile'))
+    # Debug information
+    profile_complete = g.user.get('profile_complete', False)
+    flash(f'Profile complete status: {profile_complete}', 'info')
+    
+    # Always allow job creation (removing the profile check temporarily)
+    # if not profile_complete:
+    #     flash('Please complete your profile before posting jobs.', 'warning')
+    #     return redirect(url_for('profile.recruiter_profile'))
         
     if request.method == 'POST':
         title = request.form['title']
@@ -115,26 +156,39 @@ def create():
             error = 'Application deadline is required.'
         
         if error is None:
-            db = get_db()
-            
-            # Format the deadline as a datetime object
-            deadline_date = datetime.datetime.strptime(application_deadline, '%Y-%m-%d')
-            
-            db['jobs'].insert_one({
-                'title': title,
-                'description': description,
-                'company_name': company_name,
-                'location': location,
-                'job_type': job_type,
-                'salary_range': salary_range,
-                'min_cgpa': min_cgpa,
-                'eligible_branches': eligible_branches,
-                'application_deadline': deadline_date,
-                'created_at': datetime.datetime.now(),
-                'recruiter_id': g.user['_id'],
-                'recruiter_name': g.user.get('full_name', 'Recruiter'),
-                'company_logo': g.user.get('company_logo', '')
-            })
+            try:
+                db = get_db()
+                
+                # Format the deadline as a datetime object
+                deadline_date = datetime.datetime.strptime(application_deadline, '%Y-%m-%d')
+                
+                # Create job without debug messages
+                
+                # Insert the job
+                result = db['jobs'].insert_one({
+                    'title': title,
+                    'description': description,
+                    'company_name': company_name,
+                    'location': location,
+                    'job_type': job_type,
+                    'salary_range': salary_range,
+                    'min_cgpa': min_cgpa,
+                    'eligible_branches': eligible_branches,
+                    'application_deadline': deadline_date,
+                    'created_at': datetime.datetime.now(),
+                    'recruiter_id': g.user['_id'],
+                    'recruiter_name': g.user.get('full_name', 'Recruiter'),
+                    'company_logo': g.user.get('company_logo', '')
+                })
+                
+                if result.inserted_id:
+                    flash(f'Job listing created successfully with ID: {result.inserted_id}', 'success')
+                else:
+                    flash('Failed to create job listing. Please try again.', 'error')
+            except Exception as e:
+                error = f'An error occurred: {str(e)}'
+                flash(error, 'error')
+                return render_template('jobs/create.html', branches=branches, job_types=job_types)
             
             flash('Job listing created successfully!', 'success')
             return redirect(url_for('jobs.index'))
@@ -190,7 +244,10 @@ def detail(id):
         })
         has_applied = application is not None
     
-    return render_template('jobs/detail.html', job=job, has_applied=has_applied)
+    # Pass the current datetime to the template
+    now = datetime.datetime.now()
+    
+    return render_template('jobs/detail.html', job=job, has_applied=has_applied, now=now)
 
 @bp.route('/<id>/update', methods=('GET', 'POST'))
 @recruiter_required
@@ -281,7 +338,10 @@ def update(id):
     if isinstance(job.get('application_deadline'), datetime.datetime):
         job['application_deadline_formatted'] = job['application_deadline'].strftime('%Y-%m-%d')
     
-    return render_template('jobs/update.html', job=job, branches=branches, job_types=job_types)
+    # Pass the current datetime to the template
+    now = datetime.datetime.now()
+    
+    return render_template('jobs/update.html', job=job, branches=branches, job_types=job_types, now=now)
 
 @bp.route('/<id>/delete', methods=('POST',))
 @recruiter_required
@@ -357,25 +417,71 @@ def apply(id):
 def my_listings():
     """Show job listings created by the current recruiter."""
     db = get_db()
-    jobs = list(db['jobs'].find({'recruiter_id': g.user['_id']}).sort('created_at', -1))
     
-    return render_template('jobs/my_listings.html', jobs=jobs)
+    try:
+        # Get jobs created by the current recruiter
+        jobs = list(db['jobs'].find({'recruiter_id': g.user['_id']}).sort('created_at', -1))
+        
+        # Convert ObjectId to string for each job
+        for job in jobs:
+            job_id = job['_id']
+            job['_id'] = str(job['_id'])
+            
+            # Count applications for each job - use the ObjectId for querying
+            job['application_count'] = db['applications'].count_documents({'job_id': job_id})
+    except Exception as e:
+        flash(f'Error retrieving job listings: {str(e)}', 'error')
+        jobs = []
+    
+    # Pass the current datetime to the template
+    now = datetime.datetime.now()
+    
+    return render_template('jobs/my_listings.html', jobs=jobs, now=now)
 
 @bp.route('/my-applications')
 @student_required
 def my_applications():
     """Show job applications submitted by the current student."""
     db = get_db()
-    applications = list(db['applications'].find({'student_id': g.user['_id']}).sort('created_at', -1))
     
-    # Get job details for each application
-    for app in applications:
-        if 'job_id' in app:
-            job = db['jobs'].find_one({'_id': app['job_id']})
-            if job:
-                app['job'] = job
+    try:
+        applications = list(db['applications'].find({'student_id': g.user['_id']}).sort('created_at', -1))
+        
+        # Get job details for each application
+        for app in applications:
+            # Ensure the application ID is a string
+            app['_id'] = str(app['_id'])
+            
+            if 'job_id' in app:
+                # Store the original job_id (ObjectId)
+                original_job_id = app['job_id']
+                
+                # Convert job_id to string for template use
+                app['job_id'] = str(app['job_id'])
+                
+                # Get the job details
+                job = db['jobs'].find_one({'_id': original_job_id})
+                if job:
+                    # Convert ObjectId to string
+                    job['_id'] = str(job['_id'])
+                    
+                    # Store job details directly in the application object
+                    # This ensures the template has access to job details even without nested access
+                    if 'job_title' not in app or not app['job_title']:
+                        app['job_title'] = job.get('title', 'Unknown Job')
+                    if 'company_name' not in app or not app['company_name']:
+                        app['company_name'] = job.get('company_name', 'Unknown Company')
+                        
+                    # Store job as a separate property for templates that expect it
+                    app['job'] = job
+    except Exception as e:
+        flash(f'Error retrieving applications: {str(e)}', 'error')
+        applications = []
     
-    return render_template('jobs/my_applications.html', applications=applications)
+    # Pass the current datetime to the template
+    now = datetime.datetime.now()
+    
+    return render_template('jobs/my_applications.html', applications=applications, now=now)
 
 def get_job(id):
     """Get a job by id."""

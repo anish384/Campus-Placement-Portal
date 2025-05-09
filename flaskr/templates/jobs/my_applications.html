@@ -31,7 +31,7 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="company-logo me-3">
-                                            {% if app.job.company_logo %}
+                                            {% if app.job is defined and app.job and app.job.company_logo %}
                                             <img src="{{ app.job.company_logo }}" alt="{{ app.company_name }}" class="img-fluid">
                                             {% else %}
                                             <div class="default-logo">

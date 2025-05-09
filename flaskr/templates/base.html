@@ -37,55 +37,117 @@
                             <i class="fas fa-home me-1"></i> Home
                         </a>
                     </li>
+                    
+                    <!-- Navigation for non-logged in users and students -->
+                    {% if not g.user or g.user.user_type != 'recruiter' %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint.startswith('jobs.') %}active{% endif %}"
+                        <a class="nav-link {% if request.endpoint.startswith('jobs.') and request.endpoint != 'jobs.my_applications' and request.endpoint != 'jobs.my_listings' and request.endpoint != 'jobs.create' %}active{% endif %}"
                             href="{{ url_for('jobs.index') }}">
                             <i class="fas fa-briefcase me-1"></i> Jobs
                         </a>
                     </li>
-                    {% if g.user %}
-                        {% if g.user.user_type == 'student' %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'jobs.my_applications' %}active{% endif %}"
-                                href="{{ url_for('jobs.my_applications') }}">
-                                <i class="fas fa-clipboard-list me-1"></i> My Applications
-                            </a>
-                        </li>
-                        {% elif g.user.user_type == 'recruiter' %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'jobs.my_listings' %}active{% endif %}"
-                                href="{{ url_for('jobs.my_listings') }}">
-                                <i class="fas fa-list-alt me-1"></i> My Job Listings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'jobs.create' %}active{% endif %}"
-                                href="{{ url_for('jobs.create') }}">
-                                <i class="fas fa-plus-circle me-1"></i> Post Job
-                            </a>
-                        </li>
-                        {% endif %}
+                    {% endif %}
+                    
+                    <!-- Student-specific navigation -->
+                    {% if g.user and g.user.user_type == 'student' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint == 'jobs.my_applications' or request.endpoint == 'applications.interviews' %}active{% endif %}" 
+                           href="#" id="studentDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-graduate me-1"></i> Student
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="studentDropdown">
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint == 'jobs.my_applications' %}active{% endif %}"
+                                    href="{{ url_for('jobs.my_applications') }}">
+                                    <i class="fas fa-clipboard-list me-1"></i> My Applications
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint == 'applications.interviews' %}active{% endif %}"
+                                    href="{{ url_for('applications.interviews') }}">
+                                    <i class="fas fa-calendar-alt me-1"></i> My Interviews
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint == 'profile.student_view' or request.endpoint == 'profile.student_profile' %}active{% endif %}"
+                                    href="{{ url_for('profile.student_view') }}">
+                                    <i class="fas fa-id-card me-1"></i> My Profile
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Recruiter-specific navigation -->
+                    {% elif g.user and g.user.user_type == 'recruiter' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint == 'jobs.my_listings' or request.endpoint == 'jobs.create' %}active{% endif %}" 
+                           href="#" id="jobsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-briefcase me-1"></i> Jobs
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="jobsDropdown">
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint == 'jobs.my_listings' %}active{% endif %}"
+                                    href="{{ url_for('jobs.my_listings') }}">
+                                    <i class="fas fa-list-alt me-1"></i> My Job Listings
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint == 'jobs.create' %}active{% endif %}"
+                                    href="{{ url_for('jobs.create') }}">
+                                    <i class="fas fa-plus-circle me-1"></i> Post New Job
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'applications.interviews' %}active{% endif %}"
+                            href="{{ url_for('applications.interviews') }}">
+                            <i class="fas fa-calendar-alt me-1"></i> Interviews
+                        </a>
+                    </li>
                     {% endif %}
                 </ul>
-                <div class="d-flex">
+                
+                <!-- Right-aligned navigation items -->
+                <ul class="navbar-nav">
                     {% if g.user %}
-                        <a href="{{ url_for('profile.user') }}"
-                            class="nav-link {% if request.endpoint == 'profile.user' %}active{% endif %}"
-                            title="Profile">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'applications.notifications' %}active{% endif %}"
+                            href="{{ url_for('applications.notifications') }}">
+                            <i class="fas fa-bell me-1"></i> Notifications
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint == 'profile.user' or request.endpoint == 'profile.student_view' or request.endpoint == 'profile.recruiter_view' or request.endpoint == 'profile.student_profile' or request.endpoint == 'profile.recruiter_profile' %}active{% endif %}" 
+                           href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-user me-1"></i> {{ g.user.username }}
                         </a>
-                        <a href="{{ url_for('auth.logout') }}"
-                            class="nav-link"
-                            title="Logout">
-                            <i class="fas fa-sign-out-alt me-1"></i> Logout
-                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('profile.user') }}">
+                                    <i class="fas fa-id-card me-1"></i> View Profile
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                    <i class="fas fa-sign-out-alt me-1"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     {% else %}
+                    <li class="nav-item">
                         <a href="{{ url_for('auth.auth_select') }}"
                             class="nav-link {% if request.endpoint == 'auth.auth_select' %}active{% endif %}">
                             <i class="fas fa-sign-in-alt me-1"></i> Login / Register
                         </a>
+                    </li>
                     {% endif %}
-                </div>
+                </ul>
             </div>
         </div>
     </nav>

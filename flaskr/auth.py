@@ -86,7 +86,7 @@ def student_register():
                 })
                 
                 # Log the registration
-                log_admin_event(f"New student registered: {username} ({email})")
+                log_admin_event("student_registration", f"New student registered: {username} ({email})")
                 
                 # Automatically log in the new user
                 session.clear()
@@ -160,14 +160,14 @@ def recruiter_register():
                     'username': username,
                     'email': email,
                     'password': generate_password_hash(password),
-                    'verified': False,  # Recruiters need verification
+                    'verified': True,  # Recruiters are automatically verified
                     'created_at': datetime.datetime.now(),
                     'updated_at': datetime.datetime.now(),
                     'profile_complete': False  # Mark profile as incomplete
                 })
                 
                 # Log the registration
-                log_admin_event(f"New recruiter registered: {username} ({email})")
+                log_admin_event("recruiter_registration", f"New recruiter registered: {username} ({email})")
                 
                 # Automatically log in the new user
                 session.clear()
@@ -280,8 +280,6 @@ def recruiter_login():
                 error = 'Incorrect email.'
             elif not check_password_hash(user['password'], password):
                 error = 'Incorrect password.'
-            elif not user.get('verified', False):
-                error = 'Your account is pending verification. Please wait for approval.'
         
         if error is None:
             session.clear()

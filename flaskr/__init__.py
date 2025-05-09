@@ -23,10 +23,19 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    from flask import g, render_template
+    from flask import g, render_template, redirect, url_for
     @app.route('/')
     def index():
-        username = g.user['username'] if getattr(g, 'user', None) else None
+        if getattr(g, 'user', None):
+            # Check if student profile is complete
+            if g.user.get('user_type') == 'student' and not g.user.get('profile_complete', False):
+                return redirect(url_for('profile.student_profile'))
+            # Check if recruiter profile is complete
+            elif g.user.get('user_type') == 'recruiter' and not g.user.get('profile_complete', False):
+                return redirect(url_for('profile.recruiter_profile'))
+            username = g.user['username']
+        else:
+            username = None
         return render_template('index.html', username=username)
 
     from . import db
@@ -64,5 +73,9 @@ def create_app(test_config=None):
     # Register jobs blueprint
     from . import jobs
     app.register_blueprint(jobs.bp)
+    
+    # Register applications blueprint
+    from . import applications
+    app.register_blueprint(applications.bp)
 
     return app

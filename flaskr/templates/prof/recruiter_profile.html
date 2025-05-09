@@ -63,6 +63,12 @@
               </div>
               
               <div class="form-group mb-3">
+                <label for="linkedin_url" class="form-label"><i class="fab fa-linkedin me-2"></i>Company LinkedIn</label>
+                <input class="form-control" type="url" name="linkedin_url" id="linkedin_url" placeholder="https://www.linkedin.com/company/example" value="{{ recruiter.linkedin_url if recruiter.linkedin_url else '' }}">
+                <div class="form-text">Optional, but helps students research your company</div>
+              </div>
+              
+              <div class="form-group mb-3">
                 <label for="industry" class="form-label"><i class="fas fa-industry me-2"></i>Industry</label>
                 <select class="form-control" name="industry" id="industry" required>
                   <option value="" disabled {% if not recruiter.industry %}selected{% endif %}>Select your industry</option>
@@ -75,6 +81,64 @@
                   <option value="Other" {% if recruiter.industry == 'Other' %}selected{% endif %}>Other</option>
                 </select>
                 <div class="invalid-feedback">Please select your industry.</div>
+              </div>
+            </div>
+            
+            <!-- Eligibility Criteria -->
+            <div class="form-section mb-4">
+              <h4 class="section-title border-bottom pb-2 mb-3">Default Eligibility Criteria</h4>
+              <p class="text-muted mb-3">These will be used as default values when posting jobs. You can override them for specific job postings.</p>
+              
+              <div class="form-group mb-3">
+                <label for="default_min_cgpa" class="form-label"><i class="fas fa-graduation-cap me-2"></i>Minimum CGPA Required</label>
+                <input class="form-control" type="number" step="0.1" min="0" max="10" name="default_min_cgpa" id="default_min_cgpa" placeholder="e.g., 7.5" value="{{ recruiter.default_min_cgpa if recruiter.default_min_cgpa else '' }}">
+                <div class="form-text">Minimum CGPA required for students to apply</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label class="form-label"><i class="fas fa-code-branch me-2"></i>Eligible Branches</label>
+                <div class="row">
+                  {% set branches = ['Computer Science', 'Information Technology', 'Electronics', 'Electrical', 'Mechanical', 'Civil', 'Chemical', 'Biotechnology'] %}
+                  {% for branch in branches %}
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="default_eligible_branches" value="{{ branch }}" id="branch_{{ loop.index }}" {% if recruiter.default_eligible_branches and branch in recruiter.default_eligible_branches %}checked{% endif %}>
+                      <label class="form-check-label" for="branch_{{ loop.index }}">
+                        {{ branch }}
+                      </label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="default_skills" class="form-label"><i class="fas fa-tools me-2"></i>Required Skills</label>
+                <textarea class="form-control" name="default_skills" id="default_skills" rows="3" placeholder="e.g., Python, Java, SQL, Communication skills">{{ recruiter.default_skills if recruiter.default_skills else '' }}</textarea>
+                <div class="form-text">Enter skills separated by commas</div>
+              </div>
+            </div>
+            
+            <!-- Job Details -->
+            <div class="form-section mb-4">
+              <h4 class="section-title border-bottom pb-2 mb-3">Default Job Details</h4>
+              
+              <div class="form-group mb-3">
+                <label for="default_job_role" class="form-label"><i class="fas fa-briefcase me-2"></i>Default Job Role</label>
+                <input class="form-control" name="default_job_role" id="default_job_role" placeholder="e.g., Software Engineer, Data Analyst" value="{{ recruiter.default_job_role if recruiter.default_job_role else '' }}">
+                <div class="form-text">Common job role your company typically hires for</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="default_job_type" class="form-label"><i class="fas fa-clock me-2"></i>Default Job Type</label>
+                <select class="form-control" name="default_job_type" id="default_job_type">
+                  <option value="" {% if not recruiter.default_job_type %}selected{% endif %}>Select job type</option>
+                  <option value="Full-time" {% if recruiter.default_job_type == 'Full-time' %}selected{% endif %}>Full-time</option>
+                  <option value="Part-time" {% if recruiter.default_job_type == 'Part-time' %}selected{% endif %}>Part-time</option>
+                  <option value="Internship" {% if recruiter.default_job_type == 'Internship' %}selected{% endif %}>Internship</option>
+                  <option value="Contract" {% if recruiter.default_job_type == 'Contract' %}selected{% endif %}>Contract</option>
+                  <option value="Remote" {% if recruiter.default_job_type == 'Remote' %}selected{% endif %}>Remote</option>
+                </select>
               </div>
             </div>
             
