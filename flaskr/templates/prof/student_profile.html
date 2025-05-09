@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Complete Student Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Complete Your Student Profile</h3>
+          <p class="mb-0 small">Please provide your academic details to apply for jobs</p>
+        </div>
+        <div class="card-body">
+          {% if not student.profile_complete %}
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <span>You need to complete your profile before you can apply for jobs. This information helps recruiters match you with suitable opportunities.</span>
+          </div>
+          {% endif %}
+          
+          <form method="post" class="needs-validation" novalidate>
+            <!-- Personal Information -->
+            <div class="form-section mb-4">
+              <h4 class="section-title border-bottom pb-2 mb-3">Personal Information</h4>
+              
+              <div class="form-group mb-3">
+                <label for="full_name" class="form-label"><i class="fas fa-user me-2"></i>Full Name</label>
+                <input class="form-control" name="full_name" id="full_name" placeholder="Enter your full name" required value="{{ student.full_name if student.full_name else '' }}">
+                <div class="invalid-feedback">Please enter your full name.</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="phone" class="form-label"><i class="fas fa-phone me-2"></i>Phone Number</label>
+                <div class="input-group">
+                  <span class="input-group-text">+91</span>
+                  <input class="form-control" type="tel" name="phone" id="phone" placeholder="Enter your 10-digit phone number" required pattern="[0-9]{10}" maxlength="10" value="{{ student.phone[3:] if student.phone else '' }}">
+                </div>
+                <div class="form-text">Please enter your 10-digit phone number without the country code</div>
+              </div>
+            </div>
+            
+            <!-- Academic Information -->
+            <div class="form-section mb-4">
+              <h4 class="section-title border-bottom pb-2 mb-3">Academic Information</h4>
+              
+              <div class="form-group mb-3">
+                <label for="college" class="form-label"><i class="fas fa-university me-2"></i>College/University</label>
+                <input class="form-control" name="college" id="college" placeholder="Enter your college or university name" required value="{{ student.college if student.college else '' }}">
+                <div class="invalid-feedback">Please enter your college name.</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="branch" class="form-label"><i class="fas fa-code-branch me-2"></i>Branch/Department</label>
+                <select class="form-control" name="branch" id="branch" required>
+                  <option value="" disabled {% if not student.branch %}selected{% endif %}>Select your branch</option>
+                  <option value="Computer Science" {% if student.branch == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                  <option value="Information Technology" {% if student.branch == 'Information Technology' %}selected{% endif %}>Information Technology</option>
+                  <option value="Electronics" {% if student.branch == 'Electronics' %}selected{% endif %}>Electronics</option>
+                  <option value="Electrical" {% if student.branch == 'Electrical' %}selected{% endif %}>Electrical</option>
+                  <option value="Mechanical" {% if student.branch == 'Mechanical' %}selected{% endif %}>Mechanical</option>
+                  <option value="Civil" {% if student.branch == 'Civil' %}selected{% endif %}>Civil</option>
+                  <option value="Chemical" {% if student.branch == 'Chemical' %}selected{% endif %}>Chemical</option>
+                  <option value="Biotechnology" {% if student.branch == 'Biotechnology' %}selected{% endif %}>Biotechnology</option>
+                  <option value="Other" {% if student.branch == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+                <div class="invalid-feedback">Please select your branch.</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="cgpa" class="form-label"><i class="fas fa-chart-line me-2"></i>CGPA</label>
+                <input class="form-control" type="number" step="0.01" min="0" max="10" name="cgpa" id="cgpa" placeholder="Enter your CGPA (out of 10)" required value="{{ student.cgpa if student.cgpa else '' }}">
+                <div class="form-text">Your CGPA is used to determine eligibility for certain job opportunities</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="graduation_year" class="form-label"><i class="fas fa-graduation-cap me-2"></i>Graduation Year</label>
+                <select class="form-control" name="graduation_year" id="graduation_year" required>
+                  <option value="" disabled {% if not student.graduation_year %}selected{% endif %}>Select your graduation year</option>
+                  {% for year in range(2025, 2031) %}
+                    <option value="{{ year }}" {% if student.graduation_year == year %}selected{% endif %}>{{ year }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select your graduation year.</div>
+              </div>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save me-2"></i>Save Profile
+              </button>
+              {% if student.profile_complete %}
+              <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Home
+              </a>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Form validation
+  (function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+      .forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+          form.classList.add('was-validated')
+        }, false)
+      })
+  })()
+</script>
+{% endblock %}

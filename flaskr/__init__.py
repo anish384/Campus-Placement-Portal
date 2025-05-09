@@ -58,7 +58,11 @@ def create_app(test_config=None):
                 from flaskr.admin_log import log_admin_event
                 log_admin_event('admin_creation', f'User {first_user.get("email")} automatically promoted to admin as first admin user')
     
-    from .  import profile
+    from . import profile
     app.register_blueprint(profile.bp)
+    
+    # Register jobs blueprint
+    from . import jobs
+    app.register_blueprint(jobs.bp)
 
     return app

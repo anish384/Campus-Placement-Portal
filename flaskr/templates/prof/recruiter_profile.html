@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Complete Recruiter Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Complete Your Recruiter Profile</h3>
+          <p class="mb-0 small">Please provide your company details to post jobs</p>
+        </div>
+        <div class="card-body">
+          {% if not recruiter.profile_complete %}
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <span>You need to complete your profile before you can post jobs. This information helps students verify your company's legitimacy.</span>
+          </div>
+          {% endif %}
+          
+          <form method="post" class="needs-validation" novalidate>
+            <!-- Personal Information -->
+            <div class="form-section mb-4">
+              <h4 class="section-title border-bottom pb-2 mb-3">Personal Information</h4>
+              
+              <div class="form-group mb-3">
+                <label for="full_name" class="form-label"><i class="fas fa-user me-2"></i>Full Name</label>
+                <input class="form-control" name="full_name" id="full_name" placeholder="Enter your full name" required value="{{ recruiter.full_name if recruiter.full_name else '' }}">
+                <div class="invalid-feedback">Please enter your full name.</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="phone" class="form-label"><i class="fas fa-phone me-2"></i>Phone Number</label>
+                <div class="input-group">
+                  <span class="input-group-text">+91</span>
+                  <input class="form-control" type="tel" name="phone" id="phone" placeholder="Enter your 10-digit phone number" required pattern="[0-9]{10}" maxlength="10" value="{{ recruiter.phone[3:] if recruiter.phone else '' }}">
+                </div>
+                <div class="form-text">Please enter your 10-digit phone number without the country code</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="designation" class="form-label"><i class="fas fa-id-badge me-2"></i>Your Designation</label>
+                <input class="form-control" name="designation" id="designation" placeholder="Enter your role in the company" required value="{{ recruiter.designation if recruiter.designation else '' }}">
+                <div class="invalid-feedback">Please enter your designation.</div>
+              </div>
+            </div>
+            
+            <!-- Company Information -->
+            <div class="form-section mb-4">
+              <h4 class="section-title border-bottom pb-2 mb-3">Company Information</h4>
+              
+              <div class="form-group mb-3">
+                <label for="company_name" class="form-label"><i class="fas fa-building me-2"></i>Company Name</label>
+                <input class="form-control" name="company_name" id="company_name" placeholder="Enter your company name" required value="{{ recruiter.company_name if recruiter.company_name else '' }}">
+                <div class="invalid-feedback">Please enter your company name.</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="company_website" class="form-label"><i class="fas fa-globe me-2"></i>Company Website</label>
+                <input class="form-control" type="url" name="company_website" id="company_website" placeholder="https://www.example.com" value="{{ recruiter.company_website if recruiter.company_website else '' }}">
+                <div class="form-text">Optional, but recommended for verification</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="industry" class="form-label"><i class="fas fa-industry me-2"></i>Industry</label>
+                <select class="form-control" name="industry" id="industry" required>
+                  <option value="" disabled {% if not recruiter.industry %}selected{% endif %}>Select your industry</option>
+                  <option value="Technology" {% if recruiter.industry == 'Technology' %}selected{% endif %}>Technology</option>
+                  <option value="Finance" {% if recruiter.industry == 'Finance' %}selected{% endif %}>Finance</option>
+                  <option value="Healthcare" {% if recruiter.industry == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+                  <option value="Education" {% if recruiter.industry == 'Education' %}selected{% endif %}>Education</option>
+                  <option value="Manufacturing" {% if recruiter.industry == 'Manufacturing' %}selected{% endif %}>Manufacturing</option>
+                  <option value="Retail" {% if recruiter.industry == 'Retail' %}selected{% endif %}>Retail</option>
+                  <option value="Other" {% if recruiter.industry == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+                <div class="invalid-feedback">Please select your industry.</div>
+              </div>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save me-2"></i>Save Profile
+              </button>
+              {% if recruiter.profile_complete %}
+              <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Home
+              </a>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Form validation
+  (function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+      .forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+          form.classList.add('was-validated')
+        }, false)
+      })
+  })()
+</script>
+{% endblock %}
