@@ -464,9 +464,6 @@
             <a href="{{ url_for('applications.view_pdf', application_id=application._id) }}" class="btn btn-sm btn-primary" target="_blank">
               <i class="fas fa-file-pdf me-1"></i> View PDF
             </a>
-            <button type="button" id="togglePdfView" class="btn btn-sm btn-outline-secondary">
-              <i class="fas fa-expand me-1"></i> Toggle View
-            </button>
             {% elif file_type in ['jpg', 'jpeg'] %}
             <a href="{{ url_for('applications.view_pdf', application_id=application._id) }}" class="btn btn-sm btn-primary" target="_blank">
               <i class="fas fa-image me-1"></i> View Image
