@@ -182,8 +182,8 @@ def student_profile():
         
         error = None
         
-        # Phone number validation: exactly 10 digits
-        phone_regex = r"^\d{10}$"
+        # Phone number validation: exactly 10 digits starting with 6, 7, 8, or 9
+        phone_regex = r"^[6-9]\d{9}$"
         
         # Validate required fields
         if not full_name:
@@ -191,7 +191,7 @@ def student_profile():
         elif not phone:
             error = 'Phone number is required.'
         elif not re.match(phone_regex, phone):
-            error = 'Please enter a valid 10-digit phone number.'
+            error = 'Please enter a valid 10-digit phone number starting with 6, 7, 8, or 9.'
         elif not dob:
             error = 'Date of birth is required.'
         elif not gender:
