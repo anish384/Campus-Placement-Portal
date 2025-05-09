@@ -280,7 +280,14 @@ function updateCgpaValue(val) {
 
 // Initialize the CGPA value display
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the CGPA value display
     updateCgpaValue(document.getElementById('min_cgpa').value);
+    
+    // Add event listener for the CGPA slider
+    const cgpaSlider = document.getElementById('min_cgpa');
+    cgpaSlider.addEventListener('change', function() {
+        document.getElementById('filter-form').submit();
+    });
     
     // Auto-submit form when select filters change
     const selectFilters = document.querySelectorAll('#filter-form select');

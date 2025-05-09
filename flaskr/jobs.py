@@ -28,8 +28,10 @@ def index():
     # Build the query
     query = {}
     
-    if min_cgpa:
-        query['min_cgpa'] = {'$lte': min_cgpa}
+    if min_cgpa is not None:
+        # Convert to float to ensure proper comparison
+        min_cgpa_float = float(min_cgpa)
+        query['min_cgpa'] = {'$lte': min_cgpa_float}
     
     if branch:
         query['eligible_branches'] = branch
