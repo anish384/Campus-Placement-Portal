@@ -1,7 +1,6 @@
 import os
 import datetime
 from flask import Flask
-from flask_mail import Mail
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -56,20 +55,61 @@ def create_app(test_config=None):
     app.register_blueprint(admin.bp)
 
 
+    # Import datetime here to ensure it's available in this scope
+    import datetime
+    
     # Create first admin user if none exists
     with app.app_context():
         database = db.get_db()
-        admin_exists = database['users'].find_one({'is_admin': True})
-        if not admin_exists:
-            # Check if any user exists that we can promote to admin
-            first_user = database['users'].find_one({})
-            if first_user:
-                database['users'].update_one(
-                    {'_id': first_user['_id']},
+        
+        # Check if any admin exists in either students or recruiters collection
+        student_admin = database['students'].find_one({'is_admin': True})
+        recruiter_admin = database['recruiters'].find_one({'is_admin': True})
+        
+        if not student_admin and not recruiter_admin:
+            # No admin exists, so promote the first user (student or recruiter) to admin
+            
+            # First check if there are any students
+            first_student = database['students'].find_one({}, sort=[('created_at', 1)])
+            
+            # Then check if there are any recruiters
+            first_recruiter = database['recruiters'].find_one({}, sort=[('created_at', 1)])
+            
+            # Determine which user was registered first (if both exist)
+            if first_student and first_recruiter:
+                # Compare creation timestamps to find the first registered user
+                if first_student.get('created_at', datetime.datetime.max) <= first_recruiter.get('created_at', datetime.datetime.max):
+                    # Student was first, promote them
+                    database['students'].update_one(
+                        {'_id': first_student['_id']},
+                        {'$set': {'is_admin': True}}
+                    )
+                    from flaskr.admin_log import log_admin_event
+                    log_admin_event('admin_creation', f'Student {first_student.get("email")} automatically promoted to admin as first user')
+                else:
+                    # Recruiter was first, promote them
+                    database['recruiters'].update_one(
+                        {'_id': first_recruiter['_id']},
+                        {'$set': {'is_admin': True}}
+                    )
+                    from flaskr.admin_log import log_admin_event
+                    log_admin_event('admin_creation', f'Recruiter {first_recruiter.get("email")} automatically promoted to admin as first user')
+            elif first_student:
+                # Only students exist, promote the first student
+                database['students'].update_one(
+                    {'_id': first_student['_id']},
                     {'$set': {'is_admin': True}}
                 )
                 from flaskr.admin_log import log_admin_event
-                log_admin_event('admin_creation', f'User {first_user.get("email")} automatically promoted to admin as first admin user')
+                log_admin_event('admin_creation', f'Student {first_student.get("email")} automatically promoted to admin as first user')
+            elif first_recruiter:
+                # Only recruiters exist, promote the first recruiter
+                database['recruiters'].update_one(
+                    {'_id': first_recruiter['_id']},
+                    {'$set': {'is_admin': True}}
+                )
+                from flaskr.admin_log import log_admin_event
+                log_admin_event('admin_creation', f'Recruiter {first_recruiter.get("email")} automatically promoted to admin as first user')
     
     from . import profile
     app.register_blueprint(profile.bp)

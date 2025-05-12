@@ -75,6 +75,11 @@ def student_register():
 
         if error is None:
             try:
+                # Check if this is the first user in the system
+                student_count = db['students'].count_documents({})
+                recruiter_count = db['recruiters'].count_documents({})
+                is_first_user = (student_count == 0 and recruiter_count == 0)
+                
                 # Insert student data with minimal information
                 result = db['students'].insert_one({
                     'username': username,
@@ -82,8 +87,13 @@ def student_register():
                     'password': generate_password_hash(password),
                     'created_at': datetime.datetime.now(),
                     'updated_at': datetime.datetime.now(),
-                    'profile_complete': False  # Mark profile as incomplete
+                    'profile_complete': False,  # Mark profile as incomplete
+                    'is_admin': is_first_user  # Make admin if first user
                 })
+                
+                # Log if this user was made an admin
+                if is_first_user:
+                    log_admin_event('admin_creation', f'Student {username} ({email}) automatically promoted to admin as first user')
                 
                 # Log the registration
                 log_admin_event("student_registration", f"New student registered: {username} ({email})")
@@ -155,6 +165,11 @@ def recruiter_register():
 
         if error is None:
             try:
+                # Check if this is the first user in the system
+                student_count = db['students'].count_documents({})
+                recruiter_count = db['recruiters'].count_documents({})
+                is_first_user = (student_count == 0 and recruiter_count == 0)
+                
                 # Insert recruiter data with minimal information
                 result = db['recruiters'].insert_one({
                     'username': username,
@@ -163,8 +178,13 @@ def recruiter_register():
                     'verified': True,  # Recruiters are automatically verified
                     'created_at': datetime.datetime.now(),
                     'updated_at': datetime.datetime.now(),
-                    'profile_complete': False  # Mark profile as incomplete
+                    'profile_complete': False,  # Mark profile as incomplete
+                    'is_admin': is_first_user  # Make admin if first user
                 })
+                
+                # Log if this user was made an admin
+                if is_first_user:
+                    log_admin_event('admin_creation', f'Recruiter {username} ({email}) automatically promoted to admin as first user')
                 
                 # Log the registration
                 log_admin_event("recruiter_registration", f"New recruiter registered: {username} ({email})")
@@ -250,9 +270,21 @@ def student_login():
                 error = 'Incorrect password.'
 
         if error is None:
+            # Update last login timestamp
+            now = datetime.datetime.now()
+            db['students'].update_one(
+                {'_id': user['_id']},
+                {'$set': {'last_login': now}}
+            )
+            
+            # Clear session and set user info
             session.clear()
             session['user_id'] = str(user['_id'])
             session['user_type'] = 'student'
+            
+            # Log successful login
+            log_admin_event('LOGIN_SUCCESS', f'Student login successful | User: {email} | IP: {request.remote_addr}')
+            
             return redirect(url_for('index'))
         
         flash(error)
@@ -305,9 +337,21 @@ def recruiter_login():
                 session['login_attempts'] = session.get('login_attempts', []) + [time.time()]
         
         if error is None:
+            # Update last login timestamp
+            now = datetime.datetime.now()
+            db['recruiters'].update_one(
+                {'_id': user['_id']},
+                {'$set': {'last_login': now}}
+            )
+            
+            # Clear session and set user info
             session.clear()
             session['user_id'] = str(user['_id'])
             session['user_type'] = 'recruiter'
+            
+            # Log successful login
+            log_admin_event('LOGIN_SUCCESS', f'Recruiter login successful | User: {email} | IP: {request.remote_addr}')
+            
             return redirect(url_for('index'))
         
         flash(error)
