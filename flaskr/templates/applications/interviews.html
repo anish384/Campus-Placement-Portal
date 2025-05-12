@@ -8,13 +8,20 @@
 <div class="container mt-4">
   <div class="card">
     <div class="card-header bg-primary text-white">
-      <h5 class="mb-0">
-        {% if g.user.user_type == 'student' %}
-          My Interviews
-        {% else %}
-          Scheduled Interviews
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          {% if g.user.user_type == 'student' %}
+            My Interviews
+          {% else %}
+            Scheduled Interviews
+          {% endif %}
+        </h5>
+        {% if g.user.user_type == 'recruiter' %}
+          <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#createInterviewModal">
+            <i class="fas fa-plus-circle me-2"></i> Create Interview
+          </button>
         {% endif %}
-      </h5>
+      </div>
     </div>
     <div class="card-body">
       {% if interviews %}
@@ -66,126 +73,17 @@
                     {% endif %}
                   </td>
                   <td>
-                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#viewInterviewModal{{ interview._id }}">
+                    <a href="{{ url_for('applications.interview_view', interview_id=interview._id) }}" class="btn btn-sm btn-outline-primary">
                       <i class="fas fa-eye"></i> View
-                    </button>
+                    </a>
                     
                     {% if g.user.user_type == 'recruiter' and interview.status == 'Scheduled' %}
-                      <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#updateResultModal{{ interview._id }}">
+                      <a href="{{ url_for('applications.interview_result', interview_id=interview._id) }}" class="btn btn-sm btn-outline-success">
                         <i class="fas fa-check-circle"></i> Result
-                      </button>
+                      </a>
                     {% endif %}
                   </td>
                 </tr>
-
-                <!-- View Interview Modal -->
-                <div class="modal fade" id="viewInterviewModal{{ interview._id }}" tabindex="-1" aria-labelledby="viewInterviewModalLabel{{ interview._id }}" aria-hidden="true">
-                  <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                      <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title" id="viewInterviewModalLabel{{ interview._id }}">Interview Details</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                      </div>
-                      <div class="modal-body">
-                        <div class="row">
-                          <div class="col-md-6">
-                            <h5>Job Information</h5>
-                            <p><strong>Title:</strong> {{ interview.job.title }}</p>
-                            <p><strong>Company:</strong> {{ interview.job.company_name }}</p>
-                            <p><strong>Location:</strong> {{ interview.job.location }}</p>
-                          </div>
-                          <div class="col-md-6">
-                            {% if g.user.user_type == 'recruiter' %}
-                              <h5>Student Information</h5>
-                              <p><strong>Name:</strong> {{ interview.application.student_name }}</p>
-                              <p><strong>Email:</strong> {{ interview.application.student_email }}</p>
-                              <p><strong>Phone:</strong> {{ interview.application.student_phone }}</p>
-                              <p><strong>CGPA:</strong> {{ interview.application.student_cgpa }}</p>
-                              <p><strong>Branch:</strong> {{ interview.application.student_branch }}</p>
-                            {% else %}
-                              <h5>Interview Information</h5>
-                              <p><strong>Status:</strong> 
-                                <span class="badge 
-                                  {% if interview.status == 'Scheduled' %}bg-info
-                                  {% elif interview.status == 'Completed' %}bg-success
-                                  {% elif interview.status == 'Cancelled' %}bg-danger
-                                  {% else %}bg-secondary{% endif %}">
-                                  {{ interview.status }}
-                                </span>
-                              </p>
-                              {% if interview.get('result') %}
-                                <p><strong>Result:</strong> 
-                                  <span class="badge {% if interview.result == 'Pass' %}bg-success{% else %}bg-danger{% endif %}">
-                                    {{ interview.result }}
-                                  </span>
-                                </p>
-                              {% endif %}
-                            {% endif %}
-                          </div>
-                        </div>
-                        
-                        <hr>
-                        
-                        <div class="row">
-                          <div class="col-md-6">
-                            <h5>Interview Details</h5>
-                            <p><strong>Date & Time:</strong> {{ interview.interview_datetime.strftime('%d %b, %Y %H:%M') }}</p>
-                            <p><strong>Type:</strong> {{ interview.interview_type }}</p>
-                            <p><strong>Location:</strong> {{ interview.interview_location }}</p>
-                          </div>
-                          <div class="col-md-6">
-                            {% if interview.interview_details %}
-                              <h5>Additional Information</h5>
-                              <p>{{ interview.interview_details }}</p>
-                            {% endif %}
-                            
-                            {% if interview.get('feedback') %}
-                              <h5>Feedback</h5>
-                              <p>{{ interview.feedback }}</p>
-                            {% endif %}
-                          </div>
-                        </div>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Update Result Modal -->
-                {% if g.user.user_type == 'recruiter' %}
-                  <div class="modal fade" id="updateResultModal{{ interview._id }}" tabindex="-1" aria-labelledby="updateResultModalLabel{{ interview._id }}" aria-hidden="true">
-                    <div class="modal-dialog">
-                      <div class="modal-content">
-                        <div class="modal-header bg-primary text-white">
-                          <h5 class="modal-title" id="updateResultModalLabel{{ interview._id }}">Update Interview Result</h5>
-                          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <form action="{{ url_for('applications.update_interview_result', interview_id=interview._id) }}" method="post">
-                          <div class="modal-body">
-                            <div class="mb-3">
-                              <label for="result" class="form-label">Result</label>
-                              <select class="form-select" id="result" name="result" required>
-                                <option value="">Select Result</option>
-                                <option value="Pass">Pass</option>
-                                <option value="Fail">Fail</option>
-                              </select>
-                            </div>
-                            <div class="mb-3">
-                              <label for="feedback" class="form-label">Feedback</label>
-                              <textarea class="form-control" id="feedback" name="feedback" rows="3" placeholder="Provide feedback for the candidate"></textarea>
-                            </div>
-                          </div>
-                          <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Update Result</button>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                {% endif %}
               {% endfor %}
             </tbody>
           </table>
@@ -202,4 +100,81 @@
     </div>
   </div>
 </div>
+
+<!-- Create Interview Modal -->
+{% if g.user.user_type == 'recruiter' %}
+<div class="modal fade" id="createInterviewModal" tabindex="-1" aria-labelledby="createInterviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="createInterviewModalLabel">Create New Interview</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createInterviewForm" method="post" action="{{ url_for('applications.create_interview_from_list') }}">
+          <div class="mb-3">
+            <label for="selected_application" class="form-label">Select Student</label>
+            <select class="form-select" id="selected_application" name="application_id" required>
+              <option value="">Choose a selected student...</option>
+              {% for application in selected_applications %}
+                <option value="{{ application._id }}">{{ application.student_name }} - {{ application.job.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="interview_date" class="form-label">Interview Date</label>
+              <input type="date" class="form-control" id="interview_date" name="interview_date" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="interview_time" class="form-label">Interview Time</label>
+              <input type="time" class="form-control" id="interview_time" name="interview_time" required>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="interview_type" class="form-label">Interview Type</label>
+              <select class="form-select" id="interview_type" name="interview_type" required>
+                <option value="">Select Interview Type</option>
+                <option value="In-person">In-person</option>
+                <option value="Phone">Phone</option>
+                <option value="Video">Video</option>
+                <option value="Technical">Technical</option>
+                <option value="HR">HR</option>
+                <option value="Group Discussion">Group Discussion</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="interview_location" class="form-label">Interview Location</label>
+              <input type="text" class="form-control" id="interview_location" name="interview_location" required placeholder="Office address or online meeting link">
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="interview_details" class="form-label">Additional Details</label>
+            <textarea class="form-control" id="interview_details" name="interview_details" rows="3" placeholder="Any additional information for the candidate"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" form="createInterviewForm" class="btn btn-primary">Create Interview</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Set minimum date to today for the interview date field
+  document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('interview_date');
+    if (dateInput) {
+      dateInput.min = today;
+    }
+  });
+</script>
+{% endif %}
 {% endblock %}

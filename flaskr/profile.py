@@ -1,4 +1,4 @@
-from flask import (Blueprint, flash, g, redirect, render_template, request, session, url_for, send_file, current_app)
+from flask import (Blueprint, flash, g, redirect, render_template, request, session, url_for, send_file, current_app, jsonify)
 from werkzeug.exceptions import abort
 from werkzeug.utils import secure_filename
 from bson.objectid import ObjectId
@@ -139,9 +139,12 @@ def view_resume(student_id):
     if file_extension in ['pdf']:
         mimetype = 'application/pdf'
     elif file_extension in ['doc', 'docx']:
+        # For Word documents, always set as attachment to force download
         mimetype = 'application/msword'
         if file_extension == 'docx':
             mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        # Return Word documents as attachments (force download)
+        return send_file(resume_path, mimetype=mimetype, as_attachment=True)
     elif file_extension in ['jpg', 'jpeg']:
         mimetype = 'image/jpeg'
     else:
@@ -150,7 +153,7 @@ def view_resume(student_id):
     # Store the file extension in the session for the frontend to use
     session['resume_file_type'] = file_extension
     
-    # Return the file for inline viewing (not as attachment)
+    # Return the file for inline viewing (not as attachment) for non-Word documents
     return send_file(resume_path, mimetype=mimetype)
 
 @bp.route('/student', methods=('GET', 'POST'))
@@ -406,15 +409,20 @@ def recruiter_profile():
         
         error = None
         
-        # Phone number validation: exactly 10 digits
-        phone_regex = r"^\d{10}$"
+        # Phone number validation: exactly 10 digits starting with 6, 7, 8, or 9
+        phone_regex = r"^[6-9]\d{9}$"
         
         if not full_name:
             error = 'Full name is required.'
         elif not phone:
             error = 'Phone number is required.'
         elif not re.match(phone_regex, phone):
-            error = 'Please enter a valid 10-digit phone number.'
+            if len(phone) != 10:
+                error = 'Please enter a valid 10-digit phone number.'
+            elif not phone[0] in ['6', '7', '8', '9']:
+                error = 'Phone number must start with 6, 7, 8, or 9.'
+            else:
+                error = 'Please enter a valid 10-digit phone number.'
         elif not company_name:
             error = 'Company name is required.'
         elif not industry:

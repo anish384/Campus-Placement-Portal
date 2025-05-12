@@ -82,10 +82,11 @@
   
   .resume-viewer {
     width: 100%;
-    height: 850px;
+    height: 700px;
     border: 1px solid #dee2e6;
     border-radius: 0.5rem;
     transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   }
   
   .resume-viewer.fullscreen {
@@ -167,11 +168,28 @@
     padding-bottom: 1rem;
   }
   
+  /* Centered action buttons styles */
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+  
   .action-buttons {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
     z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   
   .action-button {
@@ -234,77 +252,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-5">
-  <!-- Application Header -->
-  <div class="application-header shadow-sm">
-    <div class="row align-items-center">
-      <!-- Student Basic Info -->
-      <div class="col-md-8 mb-3 mb-md-0">
-        <div class="d-flex align-items-center">
-          <div class="avatar-circle bg-primary text-white me-3">
-            {{ application.student_name[:1] }}
-          </div>
-          <div>
-            <h3 class="mb-1 fw-bold">{{ application.student_name }}</h3>
-            <div class="d-flex flex-wrap align-items-center mb-2">
-              <div class="me-3">
-                <i class="fas fa-envelope me-1 text-muted"></i>
-                <span>{{ application.student_email }}</span>
-              </div>
-              <div>
-                <i class="fas fa-phone me-1 text-muted"></i>
-                <span>{{ application.student_phone }}</span>
-              </div>
-            </div>
-            <div class="d-flex flex-wrap align-items-center">
-              <div class="me-3">
-                <span class="badge bg-primary rounded-pill">CGPA: {{ application.student_cgpa }}</span>
-              </div>
-              <div>
-                <span class="badge bg-secondary rounded-pill">{{ application.student_branch }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
       
-      <!-- Application Status -->
-      <div class="col-md-4">
-        <div class="text-md-end">
-          <div class="mb-2">
-            <span class="badge status-badge fs-6 px-3 py-2 
-              {% if application.status == 'Applied' %}bg-secondary
-              {% elif application.status == 'Shortlisted' %}bg-info text-dark
-              {% elif application.status == 'Interview Scheduled' %}bg-primary
-              {% elif application.status == 'Selected' %}bg-success
-              {% elif application.status == 'Rejected' %}bg-danger
-              {% else %}bg-secondary{% endif %}">
-              <i class="fas 
-                {% if application.status == 'Applied' %}fa-hourglass-start
-                {% elif application.status == 'Shortlisted' %}fa-user-check
-                {% elif application.status == 'Interview Scheduled' %}fa-calendar-check
-                {% elif application.status == 'Selected' %}fa-check-circle
-                {% elif application.status == 'Rejected' %}fa-times-circle
-                {% else %}fa-hourglass-start{% endif %} me-1"></i>
-              {{ application.status }}
-            </span>
-          </div>
-          <div class="application-dates p-2 bg-light rounded">
-            <p class="text-muted small mb-1">
-              <i class="fas fa-calendar-alt me-1"></i> <strong>Applied on:</strong> {{ application.created_at.strftime('%d %b, %Y %H:%M') }}
-            </p>
-            {% if application.get('status_updated_at') %}
-            <p class="text-muted small mb-0">
-              <i class="fas fa-history me-1"></i> <strong>Last updated:</strong> {{ application.status_updated_at.strftime('%d %b, %Y %H:%M') }}
-            </p>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Job Information -->
+      <!-- Job Information -->
   <div class="card mb-4 shadow-sm border-0">
     <div class="card-header bg-gradient-primary text-white">
       <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Job Information</h5>
@@ -375,10 +324,10 @@
     </div>
   </div>
   
-  <div class="row">
+  <div class="row g-4">
     <!-- Left Column: Student Information -->
-    <div class="col-md-4">
-      <div class="card info-card mb-4">
+    <div class="col-lg-4">
+      <div class="card info-card mb-4 shadow-sm border-0">
         <div class="card-header bg-gradient-primary text-white">
           <h5 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Student Information</h5>
         </div>
@@ -445,8 +394,8 @@
     </div>
     
     <!-- Right Column: Resume Viewer -->
-    <div class="col-md-8">
-      <div class="card info-card mb-4">
+    <div class="col-lg-8">
+      <div class="card info-card mb-4 shadow-sm border-0">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">
             {% if file_type == 'pdf' %}
@@ -468,18 +417,24 @@
             <a href="{{ url_for('applications.view_pdf', application_id=application._id) }}" class="btn btn-sm btn-primary" target="_blank">
               <i class="fas fa-image me-1"></i> View Image
             </a>
-            <button type="button" id="togglePdfView" class="btn btn-sm btn-outline-secondary">
-              <i class="fas fa-expand me-1"></i> Toggle View
-            </button>
+
             {% elif file_type in ['doc', 'docx'] %}
             <div class="alert alert-info py-1 px-3 mb-0">
-              <i class="fas fa-info-circle me-1"></i> Word documents cannot be viewed directly in browser
+              <i class="fas fa-info-circle me-1"></i> Download Word document to view it
             </div>
+            <a href="{{ url_for('profile.download_resume', student_id=application.student_id) }}" class="btn btn-sm btn-primary">
+              <i class="fas fa-file-word me-1"></i> Download Word
+            </a>
             {% endif %}
             
             <a href="{{ url_for('profile.download_resume', student_id=application.student_id) }}" class="btn btn-sm btn-outline-primary">
               <i class="fas fa-download me-1"></i> Download
             </a>
+            
+            <!-- AI Resume Summary Button -->
+            <button type="button" id="aiSummaryBtn" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#aiSummaryModal">
+              <i class="fas fa-robot me-1"></i> AI Summary
+            </button>
           </div>
         </div>
         <div class="card-body p-3 position-relative">
@@ -506,15 +461,20 @@
             </div>
             
             <!-- PDF Viewer -->
+            {% if file_type == 'pdf' %}
             <iframe id="pdfViewer" src="{{ url_for('profile.view_resume', student_id=application.student_id) }}" class="resume-viewer" title="PDF Viewer" style="display: none;"></iframe>
+            {% endif %}
             
             <!-- Image Viewer -->
+            {% if file_type in ['jpg', 'jpeg'] %}
             <div id="imageViewer" class="resume-viewer text-center" style="display: none; overflow: auto; padding: 20px;">
               <img id="resumeImage" src="{{ url_for('profile.view_resume', student_id=application.student_id) }}" alt="Resume Image" style="max-width: 100%; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block;">
             </div>
+            {% endif %}
             
             <!-- Word Document Message -->
-            <div id="wordViewer" class="resume-viewer text-center" style="display: none; padding: 30px;">
+            {% if file_type in ['doc', 'docx'] %}
+            <div id="wordDocMessage" class="resume-viewer text-center" style="padding: 30px;">
               <div class="p-4 bg-light rounded">
                 <i class="fas fa-file-word text-primary" style="font-size: 48px;"></i>
                 <h4 class="mt-3">Microsoft Word Document</h4>
@@ -523,34 +483,47 @@
                   <a href="{{ url_for('profile.download_resume', student_id=application.student_id) }}" class="btn btn-primary">
                     <i class="fas fa-download me-1"></i> Download Document
                   </a>
-                  <a href="{{ url_for('profile.view_resume', student_id=application.student_id) }}" class="btn btn-outline-secondary mt-2" target="_blank">
-                    <i class="fas fa-external-link-alt me-1"></i> Open in New Tab
-                  </a>
                 </div>
               </div>
             </div>
+            {% endif %}
             
             <!-- Default Viewer (fallback) -->
+            {% if file_type not in ['pdf', 'jpg', 'jpeg', 'doc', 'docx'] %}
             <iframe id="defaultViewer" src="{{ url_for('profile.view_resume', student_id=application.student_id) }}" class="resume-viewer" title="Resume Viewer" style="display: none;"></iframe>
+            {% endif %}
           </div>
         </div>
       </div>
     </div>
   </div>
   
-  <!-- Floating Action Buttons -->
-  <div class="action-buttons">
-    <button type="button" class="btn btn-primary action-button" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
-      <i class="fas fa-edit"></i>
-    </button>
-    {% if application.status == 'Shortlisted' %}
-    <a href="{{ url_for('applications.schedule_interview', application_id=application._id) }}" class="btn btn-info action-button">
-      <i class="fas fa-calendar-alt"></i>
-    </a>
-    {% endif %}
-    <a href="{{ url_for('applications.job_applications', job_id=job._id) }}" class="btn btn-secondary action-button">
-      <i class="fas fa-arrow-left"></i>
-    </a>
+  <!-- Action Buttons Section -->
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-header bg-light">
+      <h5 class="mb-0"><i class="fas fa-tasks me-2 text-primary"></i>Application Actions</h5>
+    </div>
+    <div class="card-body text-center p-4">
+      <p class="text-muted mb-4">Manage this application with the following actions</p>
+      <div class="d-flex justify-content-center flex-wrap gap-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+          <i class="fas fa-edit me-2"></i> Update Status
+        </button>
+        {% if application.status == 'Shortlisted' %}
+        <a href="{{ url_for('applications.schedule_interview', application_id=application._id) }}" class="btn btn-info">
+          <i class="fas fa-calendar-alt me-2"></i> Schedule Interview
+        </a>
+        {% endif %}
+        {% if application.status == 'Selected' %}
+        <a href="{{ url_for('applications.create_interview', application_id=application._id) }}" class="btn btn-success">
+          <i class="fas fa-calendar-check me-2"></i> Create Interview
+        </a>
+        {% endif %}
+        <a href="{{ url_for('applications.job_applications', job_id=job._id) }}" class="btn btn-secondary">
+          <i class="fas fa-arrow-left me-2"></i> Back to Applications
+        </a>
+      </div>
+    </div>
   </div>
   
   <!-- Update Status Modal -->
@@ -628,6 +601,65 @@
       </div>
     </div>
   </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Resume Summary Modal -->
+<div class="modal fade" id="aiSummaryModal" tabindex="-1" aria-labelledby="aiSummaryModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-gradient-primary text-white">
+        <h5 class="modal-title" id="aiSummaryModalLabel"><i class="fas fa-robot me-2"></i>AI Resume Summary</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="summaryLoading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3">Analyzing resume with AI... This may take a moment.</p>
+        </div>
+        <div id="summaryContent" class="d-none">
+          <div class="card mb-3 border-0 bg-light">
+            <div class="card-body">
+              <h6 class="fw-bold mb-3"><i class="fas fa-user-graduate me-2 text-primary"></i>Candidate Summary</h6>
+              <div id="candidateSummary" class="p-3 bg-white rounded">
+                <!-- AI-generated summary will be inserted here -->
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3 border-0 bg-light">
+            <div class="card-body">
+              <h6 class="fw-bold mb-3"><i class="fas fa-list-check me-2 text-primary"></i>Key Skills</h6>
+              <div id="keySkills" class="p-3 bg-white rounded">
+                <!-- AI-generated skills will be inserted here -->
+              </div>
+            </div>
+          </div>
+          <div class="card border-0 bg-light">
+            <div class="card-body">
+              <h6 class="fw-bold mb-3"><i class="fas fa-briefcase me-2 text-primary"></i>Job Fit Analysis</h6>
+              <div id="jobFitAnalysis" class="p-3 bg-white rounded">
+                <!-- AI-generated job fit analysis will be inserted here -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="summaryError" class="alert alert-danger d-none" role="alert">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <span id="errorMessage">An error occurred while generating the summary.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="regenerateSummaryBtn" class="btn btn-primary d-none">
+          <i class="fas fa-sync-alt me-1"></i> Regenerate Summary
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% endblock %}
@@ -637,11 +669,7 @@
 <script type="text/javascript">
   // Pre-define variables from server-side to avoid Jinja2 template syntax in JavaScript
   var RESUME_VIEW_URL = '{{ url_for("profile.view_resume", student_id=application.student_id) }}';
-  {% if application.resume_url %}
-    var SERVER_RESUME_URL = '{{ application.resume_url }}';
-  {% else %}
-    var SERVER_RESUME_URL = '';
-  {% endif %}
+  var SERVER_RESUME_URL = "{% if application.resume_url %}{{ application.resume_url }}{% else %}{% endif %}";
 </script>
 
 <script>
@@ -652,7 +680,7 @@
     const wordViewer = document.getElementById('wordViewer');
     const defaultViewer = document.getElementById('defaultViewer');
     const resumeImage = document.getElementById('resumeImage');
-    const togglePdfViewBtn = document.getElementById('togglePdfView');
+    // Toggle view button removed
     const fullscreenToggleBtn = document.getElementById('fullscreenToggle');
     const zoomInBtn = document.getElementById('zoomIn');
     const zoomOutBtn = document.getElementById('zoomOut');
@@ -665,54 +693,29 @@
     let currentScale = 1.0;
     let activeViewer = null;
     
-    // Function to detect file type from URL or fetch request
+    // Function to detect file type without making network requests
     async function detectFileType() {
       try {
-        // Try to get file type from server-side session data
-        const resumeUrl = RESUME_VIEW_URL;
-        const response = await fetch(resumeUrl, {
-          method: 'HEAD'
-        });
+        // Get file type from server-side variable
+        const fileType = '{{ file_type }}';
         
-        const contentType = response.headers.get('Content-Type');
-        
-        if (contentType && contentType.includes('pdf')) {
+        if (fileType === 'pdf') {
           return 'pdf';
-        } else if (contentType && (contentType.includes('word') || contentType.includes('msword') || contentType.includes('officedocument'))) {
+        } else if (['doc', 'docx'].includes(fileType)) {
           return 'word';
-        } else if (contentType && contentType.includes('image')) {
+        } else if (['jpg', 'jpeg'].includes(fileType)) {
           return 'image';
         }
         
-        // If content type doesn't help, try to check the URL for file extension
-        const urlParts = resumeUrl.split('.');
-        if (urlParts.length > 1) {
-          const extension = urlParts[urlParts.length - 1].toLowerCase();
-          if (extension === 'pdf') {
-            return 'pdf';
-          } else if (['doc', 'docx'].includes(extension)) {
-            return 'word';
-          } else if (['jpg', 'jpeg'].includes(extension)) {
-            return 'image';
-          }
-        }
-        
         // Fallback: check the file extension from the resume_url if available
-        let fileType = 'unknown';
-        
-        // Check file extension if resume URL exists
         if (SERVER_RESUME_URL) {
           if (SERVER_RESUME_URL.endsWith('.pdf')) {
-            fileType = 'pdf';
+            return 'pdf';
           } else if (SERVER_RESUME_URL.endsWith('.doc') || SERVER_RESUME_URL.endsWith('.docx')) {
-            fileType = 'word';
+            return 'word';
           } else if (SERVER_RESUME_URL.endsWith('.jpg') || SERVER_RESUME_URL.endsWith('.jpeg')) {
-            fileType = 'image';
+            return 'image';
           }
-        }
-        
-        if (fileType !== 'unknown') {
-          return fileType;
         }
         
         return 'unknown';
@@ -724,54 +727,71 @@
     
     // Function to show the appropriate viewer based on file type
     function showViewer(fileType) {
-      // Hide all viewers first
-      pdfViewer.style.display = 'none';
-      imageViewer.style.display = 'none';
-      wordViewer.style.display = 'none';
-      defaultViewer.style.display = 'none';
-      fileTypeMessage.classList.add('d-none');
+      // Get all viewer elements
+      const pdfViewer = document.getElementById('pdfViewer');
+      const imageViewer = document.getElementById('imageViewer');
+      const wordDocMessage = document.getElementById('wordDocMessage');
+      const defaultViewer = document.getElementById('defaultViewer');
+      
+      // Hide the file type message
+      if (fileTypeMessage) {
+        fileTypeMessage.classList.add('d-none');
+      }
+      
+      // Reset active viewer
+      activeViewer = null;
+      
+      // Hide all viewers that exist
+      if (pdfViewer) pdfViewer.style.display = 'none';
+      if (imageViewer) imageViewer.style.display = 'none';
+      if (defaultViewer) defaultViewer.style.display = 'none';
       
       // Show the appropriate viewer based on file type
       switch (fileType) {
         case 'pdf':
-          pdfViewer.style.display = 'block';
-          activeViewer = pdfViewer;
-          // Enable zoom controls
-          zoomInBtn.disabled = false;
-          zoomOutBtn.disabled = false;
-          // Update Open With button
-          openWithBtn.innerHTML = '<i class="fas fa-file-pdf me-1"></i> Open in PDF Viewer';
+          if (pdfViewer) {
+            pdfViewer.style.display = 'block';
+            activeViewer = pdfViewer;
+            // Enable zoom controls
+            zoomInBtn.disabled = false;
+            zoomOutBtn.disabled = false;
+          }
           break;
           
         case 'image':
-          imageViewer.style.display = 'block';
-          activeViewer = resumeImage;
-          // Enable zoom controls
-          zoomInBtn.disabled = false;
-          zoomOutBtn.disabled = false;
-          // Update Open With button
-          openWithBtn.innerHTML = '<i class="fas fa-image me-1"></i> Open Image';
+          if (imageViewer) {
+            imageViewer.style.display = 'block';
+            activeViewer = resumeImage;
+            // Enable zoom controls
+            zoomInBtn.disabled = false;
+            zoomOutBtn.disabled = false;
+          }
           break;
           
         case 'word':
-          wordViewer.style.display = 'block';
-          activeViewer = wordViewer;
-          // Disable zoom controls for Word documents
-          zoomInBtn.disabled = true;
-          zoomOutBtn.disabled = true;
-          // Update Open With button
-          openWithBtn.innerHTML = '<i class="fas fa-file-word me-1"></i> Open with Word';
-          break;
-          
-        default:
-          // Unknown file type, show default viewer with warning
-          defaultViewer.style.display = 'block';
-          activeViewer = defaultViewer;
-          fileTypeMessage.classList.remove('d-none');
-          fileTypeText.textContent = 'This file type may not display correctly in the browser. Please download to view.';
+          // Word documents are handled separately with direct download
+          // No need to do anything as the wordDocMessage is already visible
           // Disable zoom controls
           zoomInBtn.disabled = true;
           zoomOutBtn.disabled = true;
+          break;
+          
+        default:
+          // Unknown file type
+          if (defaultViewer) {
+            defaultViewer.style.display = 'block';
+            activeViewer = defaultViewer;
+            // Show file type message if it exists
+            if (fileTypeMessage) {
+              fileTypeMessage.classList.remove('d-none');
+              if (fileTypeText) {
+                fileTypeText.textContent = 'This file type may not display correctly in the browser. Please download to view.';
+              }
+            }
+            // Disable zoom controls
+            zoomInBtn.disabled = true;
+            zoomOutBtn.disabled = true;
+          }
           break;
       }
     }
@@ -779,33 +799,12 @@
     // Detect and show the appropriate viewer when page loads
     detectFileType().then(fileType => {
       showViewer(fileType);
+      
+      // No Word document viewer functionality needed
     });
 
     
-    // Toggle between normal and fullscreen view
-    togglePdfViewBtn.addEventListener('click', function() {
-      if (activeViewer) {
-        // Toggle fullscreen class on the active viewer
-        if (activeViewer === resumeImage) {
-          // For images, apply to the container
-          imageViewer.classList.toggle('fullscreen');
-          isFullscreen = imageViewer.classList.contains('fullscreen');
-        } else {
-          // For iframes and other elements
-          activeViewer.classList.toggle('fullscreen');
-          isFullscreen = activeViewer.classList.contains('fullscreen');
-        }
-        
-        // Update button text
-        if (isFullscreen) {
-          togglePdfViewBtn.innerHTML = '<i class="fas fa-compress me-1"></i> Normal View';
-          document.body.style.overflow = 'hidden'; // Prevent scrolling when in fullscreen
-        } else {
-          togglePdfViewBtn.innerHTML = '<i class="fas fa-expand me-1"></i> Toggle View';
-          document.body.style.overflow = ''; // Restore scrolling
-        }
-      }
-    });
+    // Toggle view button has been removed
     
     // Fullscreen toggle button inside the resume viewer
     fullscreenToggleBtn.addEventListener('click', function() {
@@ -824,11 +823,9 @@
         // Update button icon
         if (isFullscreen) {
           fullscreenToggleBtn.innerHTML = '<i class="fas fa-compress"></i>';
-          togglePdfViewBtn.innerHTML = '<i class="fas fa-compress me-1"></i> Normal View';
           document.body.style.overflow = 'hidden';
         } else {
           fullscreenToggleBtn.innerHTML = '<i class="fas fa-expand"></i>';
-          togglePdfViewBtn.innerHTML = '<i class="fas fa-expand me-1"></i> Toggle View';
           document.body.style.overflow = '';
         }
       }
@@ -892,6 +889,71 @@
         togglePdfViewBtn.innerHTML = '<i class="fas fa-expand me-1"></i> Toggle View';
         document.body.style.overflow = '';
       }
+    });
+  });
+  
+  // AI Resume Summary functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const aiSummaryBtn = document.getElementById('aiSummaryBtn');
+    const regenerateSummaryBtn = document.getElementById('regenerateSummaryBtn');
+    const summaryLoading = document.getElementById('summaryLoading');
+    const summaryContent = document.getElementById('summaryContent');
+    const summaryError = document.getElementById('summaryError');
+    const errorMessage = document.getElementById('errorMessage');
+    const candidateSummary = document.getElementById('candidateSummary');
+    const keySkills = document.getElementById('keySkills');
+    const jobFitAnalysis = document.getElementById('jobFitAnalysis');
+    
+    // Function to fetch resume summary from the server
+    function fetchResumeSummary() {
+      // Show loading, hide content and error
+      summaryLoading.classList.remove('d-none');
+      summaryContent.classList.add('d-none');
+      summaryError.classList.add('d-none');
+      regenerateSummaryBtn.classList.add('d-none');
+      
+      // Get application ID from the current page URL
+      const applicationId = window.location.pathname.split('/').pop();
+      
+      // Fetch the summary from the server
+      fetch(`/applications/resume-summary/${applicationId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Hide loading, show content
+          summaryLoading.classList.add('d-none');
+          summaryContent.classList.remove('d-none');
+          regenerateSummaryBtn.classList.remove('d-none');
+          
+          // Update the content sections
+          candidateSummary.innerHTML = data.candidate_summary;
+          keySkills.innerHTML = data.key_skills;
+          jobFitAnalysis.innerHTML = data.job_fit;
+        })
+        .catch(error => {
+          // Hide loading, show error
+          summaryLoading.classList.add('d-none');
+          summaryError.classList.remove('d-none');
+          regenerateSummaryBtn.classList.remove('d-none');
+          
+          // Update error message
+          errorMessage.textContent = `An error occurred: ${error.message}`;
+          console.error('Error fetching resume summary:', error);
+        });
+    }
+    
+    // Event listener for the AI Summary button
+    aiSummaryBtn.addEventListener('click', function() {
+      fetchResumeSummary();
+    });
+    
+    // Event listener for the Regenerate Summary button
+    regenerateSummaryBtn.addEventListener('click', function() {
+      fetchResumeSummary();
     });
   });
 </script>

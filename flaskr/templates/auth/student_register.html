@@ -68,6 +68,7 @@
               <li id="uppercase"><i class="fas fa-times"></i> One uppercase letter</li>
               <li id="lowercase"><i class="fas fa-times"></i> One lowercase letter</li>
               <li id="number"><i class="fas fa-times"></i> One number</li>
+              <li id="special"><i class="fas fa-times"></i> One special character</li>
             </ul>
           </div>
 
@@ -536,6 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const uppercaseReq = document.getElementById('uppercase');
   const lowercaseReq = document.getElementById('lowercase');
   const numberReq = document.getElementById('number');
+  const specialReq = document.getElementById('special');
   
   // Check password strength
   passwordInput.addEventListener('input', function() {
@@ -547,6 +549,7 @@ document.addEventListener('DOMContentLoaded', function() {
     uppercaseReq.innerHTML = '<i class="fas fa-times"></i> One uppercase letter';
     lowercaseReq.innerHTML = '<i class="fas fa-times"></i> One lowercase letter';
     numberReq.innerHTML = '<i class="fas fa-times"></i> One number';
+    specialReq.innerHTML = '<i class="fas fa-times"></i> One special character';
     
     // Check length
     if (password.length >= 8) {
@@ -568,8 +571,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Check numbers
     if (/[0-9]/.test(password)) {
-      strength += 25;
+      strength += 20;
       numberReq.innerHTML = '<i class="fas fa-check"></i> One number';
+    }
+    
+    // Check special characters
+    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      strength += 20;
+      specialReq.innerHTML = '<i class="fas fa-check"></i> One special character';
     }
     
     // Update strength bar
