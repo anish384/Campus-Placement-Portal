@@ -111,4 +111,4 @@ Developed during the Gadag Hackathon, this application addresses the challenges 
 
 ---
 
-Developed with ❤️ for the Gadag Hackathon
+Developed with ❤️ for the Hackfinity Hackathon
