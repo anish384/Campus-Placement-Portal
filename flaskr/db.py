@@ -5,7 +5,7 @@ from pymongo.errors import ConnectionFailure, ConfigurationError
 
 def get_db():
     if 'db' not in g:
-        mongo_uri = current_app.config.get('MONGO_URI')
+        mongo_uri = os.environ.get('MONGO_URI')
         if not mongo_uri:
             raise ValueError('MONGO_URI is not configured in the application settings')
         try:
