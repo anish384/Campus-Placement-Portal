@@ -145,9 +145,7 @@ def recruiter_register():
         db = get_db()
         error = None
 
-        # Email format validation
         email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-        # Password strength: at least 8 chars, 1 uppercase, 1 lowercase, 1 digit
         password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$"
 
         if not username:
@@ -167,31 +165,26 @@ def recruiter_register():
 
         if error is None:
             try:
-                # Check if this is the first user in the system
                 student_count = db['students'].count_documents({})
                 recruiter_count = db['recruiters'].count_documents({})
                 is_first_user = (student_count == 0 and recruiter_count == 0)
                 
-                # Insert recruiter data with minimal information
                 result = db['recruiters'].insert_one({
                     'username': username,
                     'email': email,
                     'password': generate_password_hash(password),
-                    'verified': True,  # Recruiters are automatically verified
-                    'created_at': datetime.datetime.now(),
-                    'updated_at': datetime.datetime.now(),
-                    'profile_complete': False,  # Mark profile as incomplete
-                    'is_admin': is_first_user  # Make admin if first user
+                    'verified': True,
+                    'created_at': datetime.now(), # Corrected
+                    'updated_at': datetime.now(), # Corrected
+                    'profile_complete': False,
+                    'is_admin': is_first_user
                 })
                 
-                # Log if this user was made an admin
                 if is_first_user:
                     log_admin_event('admin_creation', f'Recruiter {username} ({email}) automatically promoted to admin as first user')
                 
-                # Log the registration
                 log_admin_event("recruiter_registration", f"New recruiter registered: {username} ({email})")
                 
-                # Automatically log in the new user
                 session.clear()
                 session['user_id'] = str(result.inserted_id)
                 session['user_type'] = 'recruiter'
@@ -207,23 +200,20 @@ def recruiter_register():
                     error = f"Username {username} is already taken."
                 else:
                     error = "An error occurred during registration. Please try again."
-                    
-                # Log the error
                 current_app.logger.error(f"Registration error: {error_str}")
-        
+
+            # --- FIX: Added general exception handler ---
+            except Exception as e:
+                error = "An unexpected error occurred during registration. Please try again later."
+                current_app.logger.error(f"An unexpected exception occurred on /recruiter/register: {e}", exc_info=True)
+
+        # If any error occurred, flash it and re-render the form
         flash(error)
-        
-        # Return form data to repopulate the form
-        form_data = {
-            'username': username,
-            'email': email
-        }
-        
+        form_data = {'username': username, 'email': email}
         return render_template('auth/recruiter_register.html', form_data=form_data)
         
-    return render_template('auth/recruiter_register.html', form_data={}) if request.method == 'GET' else {}
-    
-    return render_template('auth/recruiter_register.html', form_data=form_data)
+    # For a GET request, just show the blank form
+    return render_template('auth/recruiter_register.html', form_data={})
 
 
 
