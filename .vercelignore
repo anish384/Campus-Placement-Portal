@@ -59,7 +59,7 @@ venv/
 .cache/
 
 # Ignore Vercel specific files
-.vercel/
+
 
 # Ignore any test files
 test_*.py
