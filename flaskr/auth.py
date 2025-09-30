@@ -4,7 +4,7 @@ from flask import (
 )
 import re
 import time
-import datetime
+from datetime import datetime
 from flask import request as flask_request
 from flaskr.admin_log import log_admin_event
 from werkzeug.security import check_password_hash, generate_password_hash
