@@ -83,8 +83,8 @@ def student_register():
                     'username': username,
                     'email': email,
                     'password': generate_password_hash(password),
-                    'created_at': datetime.datetime.now(),
-                    'updated_at': datetime.datetime.now(),
+                    'created_at': datetime.now(),
+                    'updated_at': datetime.now(),
                     'profile_complete': False,
                     'is_admin': is_first_user
                 })
