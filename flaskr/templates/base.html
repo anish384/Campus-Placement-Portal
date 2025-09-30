@@ -25,20 +25,19 @@
             <a class="navbar-brand" href="{{ url_for('index') }}">
                 <div class="logo-container d-flex align-items-center">
                     <div class="minimalist-logo">
-                        <span class="logo-circle"></span>
                         <span class="logo-bridge"></span>
                     </div>
                     <span class="ms-2 logo-text">career<span class="text-primary">bridge</span></span>
                 </div>
             </a>
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+            <button class="navbar-toggler border-0 shadow-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation" style="color: #4a6cf7 !important;">
+                <span class="navbar-toggler-icon" style="background-image: url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(74, 108, 247, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e&quot;) !important;"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}"
+{{ ... }}
                             href="{{ url_for('index') }}">
                             <i class="fas fa-home me-1 nav-icon"></i> Home
                         </a>
