@@ -7,20 +7,27 @@ from flask import current_app
 def get_log_path():
     return os.path.join(current_app.instance_path, 'admin.log')
 
-def log_admin_event(event_type, message, user_email=None, ip=None):
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+def log_admin_event(event_type, message):
+    """
+    Logs an event to the standard application logger.
+    This is compatible with serverless environments like Vercel.
+    """
+    # You can enrich the log message with more details if you want
+    user_email = session.get('email') # Example: get user from session if available
+    ip = request.remote_addr
+    
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
     log_entry = f"[{timestamp}] {event_type.upper()}: {message}"
+    
     if user_email:
         log_entry += f" | User: {user_email}"
+        
     if ip:
         log_entry += f" | IP: {ip}"
-    
-    # Ensure the instance directory exists
-    os.makedirs(os.path.dirname(get_log_path()), exist_ok=True)
-    
-    # Write to the log file in the instance directory
-    with open(get_log_path(), 'a', encoding='utf-8') as f:
-        f.write(log_entry + '\n')
+        
+    # Use Flask's built-in logger to output the log
+    current_app.logger.info(log_entry)
 
 
 def get_user_activity_data(days=7):
