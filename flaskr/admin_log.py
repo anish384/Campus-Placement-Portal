@@ -2,7 +2,7 @@ import datetime
 import os
 from datetime import datetime, timedelta
 from collections import defaultdict
-from flask import current_app
+from flask import current_app, request, session
 
 def get_log_path():
     return os.path.join(current_app.instance_path, 'admin.log')
