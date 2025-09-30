@@ -12,28 +12,22 @@ from flaskr.db import get_db
 
 bp = Blueprint('profile', __name__, url_prefix='/profile')
 
-# Configure upload folder
-import tempfile
-
-# Use /tmp in production (Vercel) or local uploads folder in development
-if os.environ.get('VERCEL'):
-    UPLOAD_FOLDER = os.path.join(tempfile.gettempdir(), 'campus_portal_uploads')
-else:
-    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'uploads')
-
+# Configure upload folder - use /tmp for serverless environments like Vercel
+# /tmp is the only writable directory in AWS Lambda/Vercel serverless functions
+UPLOAD_FOLDER = '/tmp/uploads'
 RESUME_FOLDER = os.path.join(UPLOAD_FOLDER, 'resumes')
 PROFILE_PHOTOS_FOLDER = os.path.join(UPLOAD_FOLDER, 'profile_photos')
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'jpg', 'jpeg'}
 ALLOWED_PHOTO_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB
 
-# Create upload directories if they don't exist
-try:
-    os.makedirs(RESUME_FOLDER, exist_ok=True)
-    os.makedirs(PROFILE_PHOTOS_FOLDER, exist_ok=True)
-except Exception as e:
-    print(f"Warning: Could not create upload directories: {e}")
-    # Continue without upload functionality
+def ensure_upload_dirs():
+    """Create upload directories if they don't exist - call this lazily, not at import time"""
+    try:
+        os.makedirs(RESUME_FOLDER, exist_ok=True)
+        os.makedirs(PROFILE_PHOTOS_FOLDER, exist_ok=True)
+    except Exception as e:
+        print(f"Warning: Could not create upload directories: {e}")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -176,6 +170,9 @@ def student_profile():
     form_data = {}
     
     if request.method == 'POST':
+        # Ensure upload directories exist before processing uploads
+        ensure_upload_dirs()
+        
         # Get form data - Personal Information
         full_name = request.form.get('full_name', '').strip()
         phone = request.form.get('phone', '').strip()
@@ -362,8 +359,11 @@ def student_profile():
                     
                     flash('Profile updated successfully!', 'success')
                     return redirect(url_for('index'))
-                except DuplicateKeyError:
-                    error = 'This phone number is already registered with another account.'
+                except Exception as e:
+                    if 'duplicate key error' in str(e).lower():
+                        error = 'This phone number is already registered with another account.'
+                    else:
+                        error = f'An error occurred: {str(e)}'
                     flash(error, 'error')
                     return render_template('prof/student_profile.html', student=form_data)
             except Exception as e:
@@ -387,6 +387,9 @@ def recruiter_profile():
     form_data = {}
     
     if request.method == 'POST':
+        # Ensure upload directories exist before processing uploads
+        ensure_upload_dirs()
+        
         # Get form data
         full_name = request.form.get('full_name', '').strip()
         phone = request.form.get('phone', '').strip()
