@@ -53,9 +53,8 @@ def student_register():
         db = get_db()
         error = None
 
-        # Email format validation
+        # --- (Your validation logic remains the same) ---
         email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-        # Password strength: at least 8 chars, 1 uppercase, 1 lowercase, 1 digit
         password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$"
 
         if not username:
@@ -72,33 +71,29 @@ def student_register():
             error = 'Passwords do not match.'
         elif not re.match(password_regex, password):
             error = 'Password must be at least 8 characters long, contain an uppercase letter, a lowercase letter, and a digit.'
+        # --- (End of validation logic) ---
 
         if error is None:
             try:
-                # Check if this is the first user in the system
                 student_count = db['students'].count_documents({})
                 recruiter_count = db['recruiters'].count_documents({})
                 is_first_user = (student_count == 0 and recruiter_count == 0)
                 
-                # Insert student data with minimal information
                 result = db['students'].insert_one({
                     'username': username,
                     'email': email,
                     'password': generate_password_hash(password),
                     'created_at': datetime.datetime.now(),
                     'updated_at': datetime.datetime.now(),
-                    'profile_complete': False,  # Mark profile as incomplete
-                    'is_admin': is_first_user  # Make admin if first user
+                    'profile_complete': False,
+                    'is_admin': is_first_user
                 })
                 
-                # Log if this user was made an admin
                 if is_first_user:
                     log_admin_event('admin_creation', f'Student {username} ({email}) automatically promoted to admin as first user')
                 
-                # Log the registration
                 log_admin_event("student_registration", f"New student registered: {username} ({email})")
                 
-                # Automatically log in the new user
                 session.clear()
                 session['user_id'] = str(result.inserted_id)
                 session['user_type'] = 'student'
@@ -107,30 +102,37 @@ def student_register():
                 return redirect(url_for('profile.student_profile'))
                 
             except DuplicateKeyError as e:
+                # This part is fine and handles existing emails correctly
                 error_str = str(e)
                 if 'email' in error_str:
                     error = f"Email {email} is already registered."
                 elif 'username' in error_str:
                     error = f"Username {username} is already taken."
                 else:
-                    error = "An error occurred during registration. Please try again."
-                    
-                # Log the error
-                current_app.logger.error(f"Registration error: {error_str}")
-        
+                    error = "A registration error occurred. This username or email may already be in use."
+                current_app.logger.error(f"Registration DuplicateKeyError: {error_str}")
+
+            # --- START OF FIX ---
+            # Add a general exception handler to catch any other errors
+            except Exception as e:
+                error = "An unexpected error occurred during registration. Please try again later."
+                # Log the full, detailed error for you to debug later
+                current_app.logger.error(f"An unexpected exception occurred on /student/register: {e}", exc_info=True)
+            # --- END OF FIX ---
+
+        # If any error occurred (validation or during try block), flash it
         flash(error)
         
-        # Return form data to repopulate the form
+        # Repopulate form data on error
         form_data = {
             'username': username,
             'email': email
         }
-        
         return render_template('auth/student_register.html', form_data=form_data)
         
-    return render_template('auth/student_register.html', form_data={}) if request.method == 'GET' else {}
-    
-    return render_template('auth/student_register.html', form_data=form_data)
+    # For a GET request, just show the blank form
+    return render_template('auth/student_register.html', form_data={})
+
 
 @bp.route('/recruiter/register', methods=('GET', 'POST'))
 def recruiter_register():
