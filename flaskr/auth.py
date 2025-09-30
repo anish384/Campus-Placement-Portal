@@ -270,7 +270,7 @@ def student_login():
                 
                 log_admin_event('LOGIN_SUCCESS', f'Student login successful | User: {email} | IP: {request.remote_addr}')
                 
-                return redirect(url_for('profile.student_profile')) # Redirect to profile
+                return redirect(url_for('index')) # Redirect to profile
             
             flash(error)
 
@@ -330,7 +330,7 @@ def recruiter_login():
                 
                 log_admin_event('LOGIN_SUCCESS', f'Recruiter login successful | User: {email} | IP: {request.remote_addr}')
                 
-                return redirect(url_for('profile.recruiter_profile')) # Redirect to profile
+                return redirect(url_for('index')) # Redirect to profile
             
             flash(error)
 
