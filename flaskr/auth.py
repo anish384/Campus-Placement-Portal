@@ -227,145 +227,133 @@ def student_login():
         session['login_attempts'] = []
 
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        db = get_db()
-        error = None
+        try:
+            email = request.form['email']
+            password = request.form['password']
+            db = get_db()
+            error = None
 
-        # Email format validation
-        email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-        if not email:
-            error = 'Email is required.'
-        elif not re.match(email_regex, email):
-            error = 'Please enter a valid email address.'
-        elif not password:
-            error = 'Password is required.'
+            email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+            if not email:
+                error = 'Email is required.'
+            elif not re.match(email_regex, email):
+                error = 'Please enter a valid email address.'
+            elif not password:
+                error = 'Password is required.'
 
-        # Rate limiting logic
-        now = time.time()
-        attempts = [t for t in session['login_attempts'] if now - t < LOGIN_ATTEMPT_WINDOW]
-        if len(attempts) >= LOGIN_ATTEMPT_LIMIT:
-            error = f'Too many login attempts. Please try again in {int(LOGIN_ATTEMPT_WINDOW - (now - attempts[0]))} seconds.'
-        else:
+            now = time.time()
+            attempts = [t for t in session['login_attempts'] if now - t < LOGIN_ATTEMPT_WINDOW]
             session['login_attempts'] = attempts
 
-        if error is None:
-            # Use projection to only fetch required fields
-            user = db['students'].find_one(
-                {'email': email},
-                {'_id': 1, 'password': 1}
-            )
+            if len(attempts) >= LOGIN_ATTEMPT_LIMIT:
+                error = f'Too many login attempts. Please try again in a minute.'
             
-            if user is None:
-                error = 'No student account found with this email.'
-            elif not check_password_hash(user['password'], password):
-                error = 'Incorrect password.'
+            if error is None:
+                user = db['students'].find_one({'email': email})
+                
+                if user is None:
+                    error = 'No student account found with this email.'
+                    session['login_attempts'].append(now) # Record failed attempt
+                elif not check_password_hash(user['password'], password):
+                    error = 'Incorrect password.'
+                    session['login_attempts'].append(now) # Record failed attempt
 
-        if error is None:
-            # Update last login timestamp
-            now = datetime.datetime.now()
-            db['students'].update_one(
-                {'_id': user['_id']},
-                {'$set': {'last_login': now}}
-            )
+            if error is None:
+                db['students'].update_one(
+                    {'_id': user['_id']},
+                    {'$set': {'last_login': datetime.now()}}
+                )
+                
+                session.clear()
+                session['user_id'] = str(user['_id'])
+                session['user_type'] = 'student'
+                
+                log_admin_event('LOGIN_SUCCESS', f'Student login successful | User: {email} | IP: {request.remote_addr}')
+                
+                return redirect(url_for('profile.student_profile')) # Redirect to profile
             
-            # Clear session and set user info
-            session.clear()
-            session['user_id'] = str(user['_id'])
-            session['user_type'] = 'student'
-            
-            # Log successful login
-            log_admin_event('LOGIN_SUCCESS', f'Student login successful | User: {email} | IP: {request.remote_addr}')
-            
-            return redirect(url_for('index'))
-        
-        flash(error)
+            flash(error)
+
+        except Exception as e:
+            error = "An unexpected error occurred during login. Please try again later."
+            current_app.logger.error(f"An unexpected exception occurred on /student/login: {e}", exc_info=True)
+            flash(error)
     
     return render_template('auth/student_login.html')
 
 @bp.route('/recruiter/login', methods=('GET', 'POST'))
 def recruiter_login():
-    """Handle recruiter login."""
     if 'login_attempts' not in session:
         session['login_attempts'] = []
         
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        db = get_db()
-        error = None
-        
-        # Email format validation
-        email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-        if not email:
-            error = 'Email is required.'
-        elif not re.match(email_regex, email):
-            error = 'Please enter a valid email address.'
-        elif not password:
-            error = 'Password is required.'
-        
-        # Rate limiting logic
-        now = time.time()
-        attempts = [t for t in session['login_attempts'] if now - t < LOGIN_ATTEMPT_WINDOW]
-        if len(attempts) >= LOGIN_ATTEMPT_LIMIT:
-            error = f'Too many login attempts. Please try again in {int(LOGIN_ATTEMPT_WINDOW - (now - attempts[0]))} seconds.'
-        else:
+        try:
+            email = request.form['email']
+            password = request.form['password']
+            db = get_db()
+            error = None
+            
+            email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+            if not email:
+                error = 'Email is required.'
+            elif not re.match(email_regex, email):
+                error = 'Please enter a valid email address.'
+            elif not password:
+                error = 'Password is required.'
+            
+            now = time.time()
+            attempts = [t for t in session['login_attempts'] if now - t < LOGIN_ATTEMPT_WINDOW]
             session['login_attempts'] = attempts
-        
-        if error is None:
-            # Use projection to only fetch required fields
-            user = db['recruiters'].find_one(
-                {'email': email},
-                {'_id': 1, 'password': 1}
-            )
+
+            if len(attempts) >= LOGIN_ATTEMPT_LIMIT:
+                error = f'Too many login attempts. Please try again in a minute.'
             
-            if user is None:
-                error = 'No recruiter account found with this email.'
-                # Add the attempt timestamp for rate limiting
-                session['login_attempts'] = session.get('login_attempts', []) + [time.time()]
-            elif not check_password_hash(user['password'], password):
-                error = 'Incorrect password.'
-                # Add the attempt timestamp for rate limiting
-                session['login_attempts'] = session.get('login_attempts', []) + [time.time()]
-        
-        if error is None:
-            # Update last login timestamp
-            now = datetime.datetime.now()
-            db['recruiters'].update_one(
-                {'_id': user['_id']},
-                {'$set': {'last_login': now}}
-            )
+            if error is None:
+                user = db['recruiters'].find_one({'email': email})
+                
+                if user is None:
+                    error = 'No recruiter account found with this email.'
+                    session['login_attempts'].append(now)
+                elif not check_password_hash(user['password'], password):
+                    error = 'Incorrect password.'
+                    session['login_attempts'].append(now)
             
-            # Clear session and set user info
-            session.clear()
-            session['user_id'] = str(user['_id'])
-            session['user_type'] = 'recruiter'
+            if error is None:
+                db['recruiters'].update_one(
+                    {'_id': user['_id']},
+                    {'$set': {'last_login': datetime.now()}}
+                )
+                
+                session.clear()
+                session['user_id'] = str(user['_id'])
+                session['user_type'] = 'recruiter'
+                
+                log_admin_event('LOGIN_SUCCESS', f'Recruiter login successful | User: {email} | IP: {request.remote_addr}')
+                
+                return redirect(url_for('profile.recruiter_profile')) # Redirect to profile
             
-            # Log successful login
-            log_admin_event('LOGIN_SUCCESS', f'Recruiter login successful | User: {email} | IP: {request.remote_addr}')
-            
-            return redirect(url_for('index'))
-        
-        flash(error)
-    
+            flash(error)
+
+        except Exception as e:
+            error = "An unexpected error occurred during login. Please try again later."
+            current_app.logger.error(f"An unexpected exception occurred on /recruiter/login: {e}", exc_info=True)
+            flash(error)
+
     return render_template('auth/recruiter_login.html')
+
 
 @bp.before_app_request
 def load_logged_in_user():
-    """Load the logged-in user's data before each request."""
     user_id = session.get('user_id')
     user_type = session.get('user_type')
 
-    if user_id is None or user_type is None:
-        g.user = None
-    else:
+    g.user = None
+    if user_id and user_type:
         db = get_db()
-        if user_type == 'student':
-            g.user = db['students'].find_one({'_id': ObjectId(user_id)})
-        elif user_type == 'recruiter':
-            g.user = db['recruiters'].find_one({'_id': ObjectId(user_id)})
-        
-        if g.user:
+        collection = db['students'] if user_type == 'student' else db['recruiters']
+        user = collection.find_one({'_id': ObjectId(user_id)})
+        if user:
+            g.user = user
             g.user['user_type'] = user_type
 
 @bp.route('/logout')
