@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import os
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -13,21 +13,23 @@ def log_admin_event(event_type, message):
     This is compatible with serverless environments like Vercel.
     """
     # You can enrich the log message with more details if you want
-    user_email = session.get('email') # Example: get user from session if available
+    user_email = session.get('email')  # Example: get user from session if available
     ip = request.remote_addr
-    
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
+
+    # Changed to use datetime.now() directly
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
     log_entry = f"[{timestamp}] {event_type.upper()}: {message}"
-    
+
     if user_email:
         log_entry += f" | User: {user_email}"
-        
+
     if ip:
         log_entry += f" | IP: {ip}"
-        
+
     # Use Flask's built-in logger to output the log
     current_app.logger.info(log_entry)
+
 
 
 def get_user_activity_data(days=7):
